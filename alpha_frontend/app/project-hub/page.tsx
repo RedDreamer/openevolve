@@ -41,6 +41,7 @@ export default function ProjectHubPage(){
     { id: 'accuracy', label: 'accuracy', weight: 0.5 },
   ]);
   const [cfg, setCfg] = useState<RunConfig>({ generations: 10, population: 24, mutation: 0.15, seed: 42, model: 'gpt-5' });
+  const [isStarting, setIsStarting] = useState<boolean>(false);
 
   const usedSeed = useMemo(()=> chooseSeed(seedCode, code), [seedCode, code]);
   const hubRef = useRef<HTMLDivElement | null>(null);
@@ -48,6 +49,30 @@ export default function ProjectHubPage(){
   const handleHeroStart = () => {
     setStarted(true);
     setTimeout(()=> hubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
+
+  const handleStartEvolution = async () => {
+    setIsStarting(true);
+    try {
+      const result = await startEvolution({ 
+        code: usedSeed, 
+        evaluator: evaluatorText, 
+        metrics, 
+        config: cfg 
+      });
+      
+      // Save runId to localStorage
+      if (result.ok && result.runId) {
+        localStorage.setItem('currentRunId', result.runId);
+        // Navigate to monitor page with runId
+        router.push(`/monitor?runId=${result.runId}`);
+      }
+    } catch (error) {
+      console.error('Failed to start evolution:', error);
+      alert('Failed to start evolution: ' + (error as Error).message);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   return (
@@ -88,13 +113,14 @@ export default function ProjectHubPage(){
               <h2 className="text-xl font-semibold text-slate-900">Project Hub</h2>
               <p className="text-sm text-slate-500">Define problems and start evolution</p>
             </div>
-            <button data-testid="start-evolution"
-              className="rounded-xl bg-violet-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-violet-700"
-              onClick={async ()=>{
-                await startEvolution({ code: usedSeed, evaluator: evaluatorText, metrics, config: cfg });
-                router.push('/monitor');
-              }}
-            >Start Evolution</button>
+            <button 
+              data-testid="start-evolution"
+              className="rounded-xl bg-violet-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-violet-700 disabled:opacity-50"
+              onClick={handleStartEvolution}
+              disabled={isStarting}
+            >
+              {isStarting ? 'Starting...' : 'Start Evolution'}
+            </button>
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

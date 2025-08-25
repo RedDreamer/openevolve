@@ -103,11 +103,30 @@ python openevolve-run.py examples/function_minimization/initial_program.py \
   --iterations 1000
 ```
 
+**Run the Full Stack (Frontend + Backend):**
+
+```bash
+# Install frontend dependencies
+cd alpha_frontend
+npm install
+
+# Go back to root directory
+cd ..
+
+# Start both frontend and backend
+./scripts/start-fullstack.sh
+```
+
 **Prefer Docker?**
 ```bash
+# For command-line usage
 docker run --rm -v $(pwd):/app ghcr.io/codelion/openevolve:latest \
   examples/function_minimization/initial_program.py \
   examples/function_minimization/evaluator.py --iterations 100
+
+# For full-stack (frontend + backend)
+docker build -f Dockerfile.fullstack -t openevolve-fullstack .
+docker run -p 8000:8000 -p 3000:3000 openevolve-fullstack
 ```
 
 ## 🎬 See It In Action
