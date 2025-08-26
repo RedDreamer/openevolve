@@ -48,9 +48,9 @@ def start_evolution():
             metrics = json.loads(form.get('metrics', '[]'))
             config_file_obj = request.files.get('config_file')
         else:
-            data = request.get_json()
+            data = request.get_json(silent=True)
             if not data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify({'error': "Invalid or missing JSON. Set Content-Type to 'application/json'."}), 415
             code = data.get('code', '')
             evaluator = data.get('evaluator', '')
             metrics = data.get('metrics', [])
