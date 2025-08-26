@@ -2,7 +2,6 @@
 API server for OpenEvolve
 """
 
-import os
 import json
 import uuid
 import asyncio
@@ -13,13 +12,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from openevolve.controller import OpenEvolve
-from openevolve.config import Config, load_config
-from typing import Dict, Any
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-
-from openevolve.controller import OpenEvolve
-from openevolve.config import Config, load_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +29,6 @@ class EvolutionRequest:
         self.code = data.get('code', '')
         self.evaluator = data.get('evaluator', '')
         self.metrics = data.get('metrics', [])
-        self.config = data.get('config', {})
         self.run_id = str(uuid.uuid4())
 
 @app.route('/health', methods=['GET'])
@@ -49,12 +40,28 @@ def health():
 def start_evolution():
     """Start a new evolution process"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-        
+        # Support both JSON and multipart form data
+        if request.files:
+            form = request.form
+            code = form.get('code', '')
+            evaluator = form.get('evaluator', '')
+            metrics = json.loads(form.get('metrics', '[]'))
+            config_file_obj = request.files.get('config_file')
+        else:
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+            code = data.get('code', '')
+            evaluator = data.get('evaluator', '')
+            metrics = data.get('metrics', [])
+            config_file_obj = None
+
         # Create evolution request
-        evolution_request = EvolutionRequest(data)
+        evolution_request = EvolutionRequest({
+            'code': code,
+            'evaluator': evaluator,
+            'metrics': metrics,
+        })
         
         # Create temporary files for code and evaluator
         temp_dir = Path(f'/tmp/openevolve_{evolution_request.run_id}')
@@ -69,31 +76,20 @@ def start_evolution():
         evaluator_file = temp_dir / 'evaluator.py'
         with open(evaluator_file, 'w') as f:
             f.write(evolution_request.evaluator)
-        
-        # Create config
-        config_dict = evolution_request.config
-        config = Config()
-        
-        # Map frontend config to backend config
-        if 'generations' in config_dict:
-            config.max_iterations = config_dict['generations']
-        if 'population' in config_dict:
-            config.database.population_size = config_dict['population']
-        if 'mutation' in config_dict:
-            # Mutation rate is not directly mapped in current config
-            pass
-        if 'seed' in config_dict:
-            config.random_seed = config_dict['seed']
-        if 'model' in config_dict:
-            # Update model in LLM config
-            if config.llm.models:
-                config.llm.models[0].name = config_dict['model']
-        
+
+        # Handle configuration
+        config_path = None
+        if config_file_obj:
+            config_filename = config_file_obj.filename or 'config.yaml'
+            config_file_path = temp_dir / config_filename
+            config_file_obj.save(config_file_path)
+            config_path = str(config_file_path)
+
         # Initialize OpenEvolve
         openevolve = OpenEvolve(
             initial_program_path=str(seed_file),
             evaluation_file=str(evaluator_file),
-            config=config,
+            config_path=config_path,
             output_dir=str(temp_dir / 'output')
         )
         

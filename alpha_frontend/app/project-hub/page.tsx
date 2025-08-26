@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import MonacoEditor from '@/components/MonacoEditor';
 import { useStarted } from '@/lib/state';
 import { startEvolution } from '@/lib/api';
-import type { Metric, RunConfig } from '@/lib/world';
+import type { Metric } from '@/lib/world';
 import LineChart from '@/components/LineChart';
 import { useRouter } from 'next/navigation';
 
@@ -40,7 +40,8 @@ export default function ProjectHubPage(){
     { id: 'latency', label: 'latency', weight: 0.5 },
     { id: 'accuracy', label: 'accuracy', weight: 0.5 },
   ]);
-  const [cfg, setCfg] = useState<RunConfig>({ generations: 10, population: 24, mutation: 0.15, seed: 42, model: 'gpt-5' });
+  const [cfgFile, setCfgFile] = useState<File | null>(null);
+  const [cfgFileName, setCfgFileName] = useState<string>('');
   const [isStarting, setIsStarting] = useState<boolean>(false);
 
   const usedSeed = useMemo(()=> chooseSeed(seedCode, code), [seedCode, code]);
@@ -54,11 +55,11 @@ export default function ProjectHubPage(){
   const handleStartEvolution = async () => {
     setIsStarting(true);
     try {
-      const result = await startEvolution({ 
-        code: usedSeed, 
-        evaluator: evaluatorText, 
-        metrics, 
-        config: cfg 
+      const result = await startEvolution({
+        code: usedSeed,
+        evaluator: evaluatorText,
+        metrics,
+        configFile: cfgFile || undefined,
       });
       
       // Save runId to localStorage
@@ -87,7 +88,7 @@ export default function ProjectHubPage(){
               <p className="mt-3 text-slate-600">AlphaEvolve 将遗传算法与多指标评估结合，自动产生候选实现、并在多个岛屿并行演化。实时监控整体性能曲线，比较不同变体，快速找到更优解。</p>
               <ul className="mt-5 space-y-2 text-sm text-slate-600 list-disc list-inside">
                 <li>支持自定义 <span className="font-medium">Seed Algorithm</span> 与 <span className="font-medium">Evaluator</span></li>
-                <li>多指标优化（Latency/Accuracy/…）与模型选择</li>
+                <li>多指标优化（Latency/Accuracy/…）</li>
                 <li>监控面板与结果工作台，便于对比与回溯</li>
               </ul>
               <div className="mt-6 flex items-center gap-3">
@@ -183,27 +184,34 @@ export default function ProjectHubPage(){
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="mb-3 text-sm font-medium text-slate-900">Run Configuration</div>
-                <div className="grid grid-cols-2 gap-3">
-                  {['generations','population','mutation','seed'].map((k)=> (
-                    <label key={k} className="flex flex-col gap-1 text-sm">
-                      <span className="text-xs text-slate-500">{k}</span>
-                      <input data-testid={`cfg-${k}`} type="number" step={k==='mutation'?0.01:1}
-                        value={(cfg as any)[k]} onChange={(e)=> setCfg({ ...cfg, [k]: Number(e.target.value) })}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200"/>
-                    </label>
-                  ))}
-                  <label className="col-span-2 flex flex-col gap-1 text-sm">
-                    <span className="text-xs text-slate-500">model</span>
-                    <select data-testid="cfg-model" value={cfg.model} onChange={(e)=> setCfg({ ...cfg, model: e.target.value })}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200">
-                      <option value="gpt-5">GPT-5</option>
-<option value="o3">OpenAI o3</option>
-                      <option value="gpt-4o">GPT-4o</option>
-                      <option value="qwen2.5-coder-32b">Qwen2.5-Coder-32B</option>
-                      <option value="deepseek-coder-v2">DeepSeek-Coder-V2</option>
-                    </select>
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
+                    <span>Upload</span>
+                    <input
+                      data-testid="upload-config"
+                      type="file"
+                      className="hidden"
+                      accept=".json,.yaml,.yml"
+                      onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); }}
+                    />
                   </label>
+                  {cfgFileName && (
+                    <button
+                      data-testid="clear-config"
+                      className="rounded-md px-2 py-1 hover:bg-slate-100"
+                      onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
+                {cfgFileName ? (
+                  <div className="mt-2 truncate text-xs text-slate-500">Uploaded: {cfgFileName}</div>
+                ) : (
+                  <div className="mt-2 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                    Upload a config file (.json/.yaml)
+                  </div>
+                )}
               </div>
             </div>
           </div>

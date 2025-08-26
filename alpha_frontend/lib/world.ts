@@ -1,5 +1,4 @@
 export interface Metric { id: string; label: string; weight: number }
-export interface RunConfig { generations: number; population: number; mutation: number; seed: number; model: string }
 export interface CodeScore { code: string; score: number }
 export interface GenerationSnapshot { codes: CodeScore[] }
 export interface IslandData { id: string; gens: GenerationSnapshot[] }
