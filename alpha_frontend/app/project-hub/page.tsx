@@ -41,6 +41,8 @@ export default function ProjectHubPage(){
     { id: 'accuracy', label: 'accuracy', weight: 0.5 },
   ]);
   const [cfg, setCfg] = useState<RunConfig>({ generations: 10, population: 24, mutation: 0.15, seed: 42, model: 'gpt-5' });
+  const [cfgFile, setCfgFile] = useState<File | null>(null);
+  const [cfgFileName, setCfgFileName] = useState<string>('');
   const [isStarting, setIsStarting] = useState<boolean>(false);
 
   const usedSeed = useMemo(()=> chooseSeed(seedCode, code), [seedCode, code]);
@@ -54,11 +56,12 @@ export default function ProjectHubPage(){
   const handleStartEvolution = async () => {
     setIsStarting(true);
     try {
-      const result = await startEvolution({ 
-        code: usedSeed, 
-        evaluator: evaluatorText, 
-        metrics, 
-        config: cfg 
+      const result = await startEvolution({
+        code: usedSeed,
+        evaluator: evaluatorText,
+        metrics,
+        config: cfg,
+        configFile: cfgFile || undefined,
       });
       
       // Save runId to localStorage
@@ -183,11 +186,33 @@ export default function ProjectHubPage(){
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="mb-3 text-sm font-medium text-slate-900">Run Configuration</div>
+                <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
+                    <span>Upload</span>
+                    <input
+                      data-testid="upload-config"
+                      type="file"
+                      className="hidden"
+                      accept=".json,.yaml,.yml"
+                      onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); }}
+                    />
+                  </label>
+                  {cfgFileName && (
+                    <button
+                      data-testid="clear-config"
+                      className="rounded-md px-2 py-1 hover:bg-slate-100"
+                      onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {cfgFileName && <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {cfgFileName}</div>}
                 <div className="grid grid-cols-2 gap-3">
                   {['generations','population','mutation','seed'].map((k)=> (
                     <label key={k} className="flex flex-col gap-1 text-sm">
                       <span className="text-xs text-slate-500">{k}</span>
-                      <input data-testid={`cfg-${k}`} type="number" step={k==='mutation'?0.01:1}
+                      <input data-testid={`cfg-${k}`} type="number" step={k==='mutation'?0.01:1} 
                         value={(cfg as any)[k]} onChange={(e)=> setCfg({ ...cfg, [k]: Number(e.target.value) })}
                         className="rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200"/>
                     </label>
