@@ -2,7 +2,6 @@
 API server for OpenEvolve
 """
 
-import os
 import json
 import uuid
 import asyncio
@@ -13,13 +12,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from openevolve.controller import OpenEvolve
-from openevolve.config import Config, load_config
-from typing import Dict, Any
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-
-from openevolve.controller import OpenEvolve
-from openevolve.config import Config, load_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +29,6 @@ class EvolutionRequest:
         self.code = data.get('code', '')
         self.evaluator = data.get('evaluator', '')
         self.metrics = data.get('metrics', [])
-        self.config = data.get('config', {})
         self.run_id = str(uuid.uuid4())
 
 @app.route('/health', methods=['GET'])
@@ -55,7 +46,6 @@ def start_evolution():
             code = form.get('code', '')
             evaluator = form.get('evaluator', '')
             metrics = json.loads(form.get('metrics', '[]'))
-            config_dict = json.loads(form.get('config', '{}'))
             config_file_obj = request.files.get('config_file')
         else:
             data = request.get_json()
@@ -64,7 +54,6 @@ def start_evolution():
             code = data.get('code', '')
             evaluator = data.get('evaluator', '')
             metrics = data.get('metrics', [])
-            config_dict = data.get('config', {})
             config_file_obj = None
 
         # Create evolution request
@@ -72,7 +61,6 @@ def start_evolution():
             'code': code,
             'evaluator': evaluator,
             'metrics': metrics,
-            'config': config_dict,
         })
         
         # Create temporary files for code and evaluator
@@ -97,30 +85,11 @@ def start_evolution():
             config_file_obj.save(config_file_path)
             config_path = str(config_file_path)
 
-        config = None
-        if config_path is None:
-            config = Config()
-            # Map frontend config to backend config
-            if 'generations' in config_dict:
-                config.max_iterations = config_dict['generations']
-            if 'population' in config_dict:
-                config.database.population_size = config_dict['population']
-            if 'mutation' in config_dict:
-                # Mutation rate is not directly mapped in current config
-                pass
-            if 'seed' in config_dict:
-                config.random_seed = config_dict['seed']
-            if 'model' in config_dict:
-                # Update model in LLM config
-                if config.llm.models:
-                    config.llm.models[0].name = config_dict['model']
-
         # Initialize OpenEvolve
         openevolve = OpenEvolve(
             initial_program_path=str(seed_file),
             evaluation_file=str(evaluator_file),
             config_path=config_path,
-            config=config,
             output_dir=str(temp_dir / 'output')
         )
         
