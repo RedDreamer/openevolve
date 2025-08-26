@@ -6,15 +6,17 @@ export async function startEvolution(payload: { code: string; evaluator?: string
   if (!payload?.code) throw new Error('startEvolution: code required');
   if (!Array.isArray(payload?.metrics)) throw new Error('startEvolution: metrics must be array');
 
-  const formData = new FormData();
-  formData.append('code', payload.code);
-  if (payload.evaluator) formData.append('evaluator', payload.evaluator);
-  formData.append('metrics', JSON.stringify(payload.metrics));
-  if (payload.configFile) formData.append('config_file', payload.configFile);
+  const body: Record<string, unknown> = {
+    code: payload.code,
+    metrics: payload.metrics,
+  };
+  if (payload.evaluator) body.evaluator = payload.evaluator;
+  if (payload.configFile) body.config = await payload.configFile.text();
 
   const response = await fetch(`${API_BASE}/start-evolution`, {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
