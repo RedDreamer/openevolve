@@ -43,22 +43,29 @@ def health():
 def start_evolution():
     """Start a new evolution process"""
     try:
-        # Frontend submits multipart/form-data using FormData
-        if request.mimetype != "multipart/form-data":
+        if request.is_json:
+            data = request.get_json() or {}
+            code = data.get("code", "")
+            evaluator = data.get("evaluator", "")
+            metrics = data.get("metrics", [])
+            config_content = data.get("config")
+            config_file_obj = None
+        elif request.mimetype == "multipart/form-data":
+            form = request.form
+            code = form.get("code", "")
+            evaluator = form.get("evaluator", "")
+            metrics_raw = form.get("metrics", "[]")
+            try:
+                metrics = json.loads(metrics_raw)
+            except json.JSONDecodeError:
+                return jsonify({"error": "Invalid metrics format; expected JSON array."}), 400
+            config_file_obj = request.files.get("config_file")
+            config_content = None
+        else:
             return (
-                jsonify({"error": "Unsupported media type. Use multipart/form-data."}),
+                jsonify({"error": "Unsupported media type. Use application/json or multipart/form-data."}),
                 415,
             )
-
-        form = request.form
-        code = form.get("code", "")
-        evaluator = form.get("evaluator", "")
-        metrics_raw = form.get("metrics", "[]")
-        try:
-            metrics = json.loads(metrics_raw)
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid metrics format; expected JSON array."}), 400
-        config_file_obj = request.files.get("config_file")
 
         # Create evolution request
         evolution_request = EvolutionRequest(
@@ -89,6 +96,11 @@ def start_evolution():
             config_filename = config_file_obj.filename or "config.yaml"
             config_file_path = temp_dir / config_filename
             config_file_obj.save(config_file_path)
+            config_path = str(config_file_path)
+        elif config_content:
+            config_file_path = temp_dir / "config.yaml"
+            with open(config_file_path, "w") as f:
+                f.write(config_content)
             config_path = str(config_file_path)
 
         # Initialize OpenEvolve
