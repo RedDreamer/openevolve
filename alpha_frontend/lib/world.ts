@@ -1,3 +1,4 @@
+/*
 export interface Metric { id: string; label: string; weight: number }
 export interface CodeScore { code: string; score: number }
 export interface GenerationSnapshot { codes: CodeScore[] }
@@ -49,3 +50,7 @@ export function generateWorld(opts?: { islands?: number; generations?: number; c
 
   return { islands: worldIslands, overallBest: movingMax(overallPerGen), generations };
 }
+*/
+
+// Demo world generator is commented out for now
+export {};
