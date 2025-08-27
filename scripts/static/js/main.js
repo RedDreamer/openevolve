@@ -119,7 +119,10 @@ if (window.STATIC_DATA) {
     loadAndRenderData(window.STATIC_DATA);
 } else {
     function fetchAndRender() {
-        fetch('/api/data')
+        const params = new URLSearchParams(window.location.search);
+        const path = params.get('path');
+        const url = path ? `/api/data?path=${encodeURIComponent(path)}` : '/api/data';
+        fetch(url)
             .then(resp => resp.json())
             .then(data => {
                 const dataStr = JSON.stringify(data);

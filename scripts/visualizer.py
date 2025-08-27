@@ -4,7 +4,7 @@ import glob
 import logging
 import shutil
 import re as _re
-from flask import Flask, render_template, render_template_string, jsonify
+from flask import Flask, render_template, render_template_string, jsonify, request
 
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ checkpoint_dir = None  # Global variable to store the checkpoint directory
 @app.route("/api/data")
 def data():
     global checkpoint_dir
-    base_folder = os.environ.get("EVOLVE_OUTPUT", "examples/")
+    base_folder = request.args.get("path") or os.environ.get("EVOLVE_OUTPUT", "examples/")
     checkpoint_dir = find_latest_checkpoint(base_folder)
     if not checkpoint_dir:
         logger.info(f"No checkpoints found in {base_folder}")

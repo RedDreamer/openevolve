@@ -61,12 +61,16 @@ export default function ProjectHubPage(){
         metrics,
         configFile: cfgFile || undefined,
       });
-      
+
       // Save runId to localStorage
-      if (result.ok && result.runId) {
+      if (result.runId) {
         localStorage.setItem('currentRunId', result.runId);
-        // Navigate to monitor page with runId
-        router.push(`/monitor?runId=${result.runId}`);
+        if (result.path) {
+          localStorage.setItem('currentOutputPath', result.path);
+        }
+        // Navigate to monitor page with runId and path
+        const pathParam = result.path ? `&path=${encodeURIComponent(result.path)}` : '';
+        router.push(`/monitor?runId=${result.runId}${pathParam}`);
       }
     } catch (error) {
       console.error('Failed to start evolution:', error);
