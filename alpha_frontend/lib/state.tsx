@@ -5,10 +5,24 @@ interface StartedCtx { started:boolean; setStarted:(v:boolean)=>void }
 const Ctx = createContext<StartedCtx | null>(null);
 
 export function StartedProvider({ children }:{ children: React.ReactNode }){
-  const [started, setStarted] = useState<boolean>(()=> {
-    try { return sessionStorage.getItem('__ae_started__') === '1'; } catch { return false; }
-  });
-  useEffect(()=>{ try { sessionStorage.setItem('__ae_started__', started? '1':'0'); } catch {} }, [started]);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    try {
+      setStarted(sessionStorage.getItem('__ae_started__') === '1');
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('__ae_started__', started ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  }, [started]);
+
   return <Ctx.Provider value={{ started, setStarted }}>{children}</Ctx.Provider>;
 }
 
