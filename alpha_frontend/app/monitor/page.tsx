@@ -1,40 +1,41 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import LineChart from '@/components/LineChart';
-import Sparkline from '@/components/Sparkline';
-import { generateWorld } from '@/lib/world';
+import { useEffect, useState } from 'react';
+// import LineChart from '@/components/LineChart';
+// import Sparkline from '@/components/Sparkline';
+// import { generateWorld } from '@/lib/world';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://localhost:8080';
 
-function IslandCard({ island, currentGen }:{ island: ReturnType<typeof generateWorld>['islands'][number]; currentGen:number }){
-  const maxSeries = useMemo(()=> island.gens.map(g=> Math.max(...g.codes.map(c=>c.score))), [island]);
-  const seriesToNow = maxSeries.slice(0, Math.min(currentGen+1, maxSeries.length));
-  const snap = island.gens[Math.min(currentGen, island.gens.length-1)];
-  const topNow = [...snap.codes].sort((a,b)=> b.score - a.score).slice(0,3);
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="text-sm font-semibold text-slate-900">{island.id}</div>
-        <div className="text-xs text-slate-500">Max now: {Math.max(...snap.codes.map(c=>c.score)).toFixed(3)}</div>
-      </div>
-      <Sparkline data={seriesToNow} height={64} testid={`spark-${island.id}`} />
-      <div className="mt-3 space-y-1">
-        {topNow.map((cs, idx)=> (
-          <div key={idx} className="flex items-center justify-between text-xs">
-            <code className="truncate text-slate-700">{cs.code}</code>
-            <span className="ml-3 tabular-nums text-slate-600">{cs.score.toFixed(3)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// Demo data components commented out for now
+// function IslandCard({ island, currentGen }:{ island: ReturnType<typeof generateWorld>['islands'][number]; currentGen:number }){
+//   const maxSeries = useMemo(()=> island.gens.map(g=> Math.max(...g.codes.map(c=>c.score))), [island]);
+//   const seriesToNow = maxSeries.slice(0, Math.min(currentGen+1, maxSeries.length));
+//   const snap = island.gens[Math.min(currentGen, island.gens.length-1)];
+//   const topNow = [...snap.codes].sort((a,b)=> b.score - a.score).slice(0,3);
+//   return (
+//     <div className="rounded-2xl border border-slate-200 bg-white p-4">
+//       <div className="mb-2 flex items-center justify-between">
+//         <div className="text-sm font-semibold text-slate-900">{island.id}</div>
+//         <div className="text-xs text-slate-500">Max now: {Math.max(...snap.codes.map(c=>c.score)).toFixed(3)}</div>
+//       </div>
+//       <Sparkline data={seriesToNow} height={64} testid={`spark-${island.id}`} />
+//       <div className="mt-3 space-y-1">
+//         {topNow.map((cs, idx)=> (
+//           <div key={idx} className="flex items-center justify-between text-xs">
+//             <code className="truncate text-slate-700">{cs.code}</code>
+//             <span className="ml-3 tabular-nums text-slate-600">{cs.score.toFixed(3)}</span>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
 
 export default function MonitorPage(){
-  const world = useMemo(()=> generateWorld({ islands: 4, generations: 60, codesPerGen: 6, seed: 2025 }), []);
-  const [gen, setGen] = useState<number>(0);
-  const [paused, setPaused] = useState<boolean>(false);
+  // const world = useMemo(()=> generateWorld({ islands: 4, generations: 60, codesPerGen: 6, seed: 2025 }), []);
+  // const [gen, setGen] = useState<number>(0);
+  // const [paused, setPaused] = useState<boolean>(false);
   const [runId, setRunId] = useState<string | null>(null);
   const [outputPath, setOutputPath] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('idle');
@@ -87,13 +88,14 @@ export default function MonitorPage(){
     return () => clearInterval(interval);
   }, [runId]);
 
-  useEffect(()=>{
-    if (paused) return; 
-    const id = setInterval(()=> setGen(g=> Math.min(world.generations-1, g+1)), 700); 
-    return ()=> clearInterval(id);
-  }, [paused, world.generations]);
+  // Demo data animation commented out for now
+  // useEffect(()=>{
+  //   if (paused) return;
+  //   const id = setInterval(()=> setGen(g=> Math.min(world.generations-1, g+1)), 700);
+  //   return ()=> clearInterval(id);
+  // }, [paused, world.generations]);
 
-  const overallToNow = world.overallBest.slice(0, gen+1);
+  // const overallToNow = world.overallBest.slice(0, gen+1);
 
   const handleStop = async () => {
     if (!runId) return;
@@ -128,10 +130,6 @@ export default function MonitorPage(){
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">Gen <span className="font-semibold">{gen}</span> / {world.generations-1}</div>
-          <button onClick={()=> setPaused(p=>!p)} className="rounded-xl bg-violet-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-violet-700">
-            {paused?'Resume':'Pause'}
-          </button>
           {runId && outputPath && (
             <>
               <a
@@ -152,8 +150,8 @@ export default function MonitorPage(){
           )}
         </div>
       </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      {/* Demo charts and island cards commented out for now */}
+      {/* <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="mb-2 text-sm font-medium text-slate-900">Overall Best Fitness</div>
         <LineChart data={overallToNow} height={220} testid="chart-overall" />
       </div>
@@ -162,7 +160,7 @@ export default function MonitorPage(){
         {world.islands.map((isl)=> (
           <IslandCard key={isl.id} island={isl} currentGen={gen} />
         ))}
-      </div>
+      </div> */}
 
       {!runId ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -171,11 +169,7 @@ export default function MonitorPage(){
             Start an evolution from the Project Hub to see real-time monitoring data here.
           </p>
         </div>
-      ) : (
-        <p className="text-xs text-slate-500">
-          Demo data shown. In a production implementation, this would display real-time data from the evolution process.
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }
