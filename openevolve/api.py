@@ -104,11 +104,12 @@ def start_evolution():
             config_path = str(config_file_path)
 
         # Initialize OpenEvolve
+        output_path = str(temp_dir / "output")
         openevolve = OpenEvolve(
             initial_program_path=str(seed_file),
             evaluation_file=str(evaluator_file),
             config_path=config_path,
-            output_dir=str(temp_dir / "output"),
+            output_dir=output_path,
         )
 
         # Store evolution
@@ -135,7 +136,16 @@ def start_evolution():
         thread.daemon = True
         thread.start()
 
-        return jsonify({"status": "started", "runId": evolution_request.run_id}), 200
+        return (
+            jsonify(
+                {
+                    "status": "started",
+                    "runId": evolution_request.run_id,
+                    "path": output_path,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error starting evolution: {e}")
