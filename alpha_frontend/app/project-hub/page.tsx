@@ -3,7 +3,6 @@ import { useMemo, useRef, useState } from 'react';
 import MonacoEditor from '@/components/MonacoEditor';
 import { useStarted } from '@/lib/state';
 import { startEvolution } from '@/lib/api';
-import type { Metric } from '@/lib/world';
 import LineChart from '@/components/LineChart';
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +13,49 @@ const SAMPLE = `def bubble_sort(arr):
             if arr[j] > arr[j+1]:
                 arr[j], arr[j+1] = arr[j+1], arr[j]
     return arr
+`;
+
+const SAMPLE_CONFIG = `# OpenEvolve Default Configuration
+# This file contains all available configuration options with sensible defaults
+# You can use this as a template for your own configuration
+
+# General settings
+max_iterations: 100                  # Maximum number of evolution iterations
+checkpoint_interval: 10               # Save checkpoints every N iterations
+log_level: "INFO"                     # Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+log_dir: null                         # Custom directory for logs (default: output_dir/logs)
+random_seed: 42                       # Random seed for reproducibility (null = random, 42 = default)
+
+# Evolution settings
+diff_based_evolution: true            # Use diff-based evolution (true) or full rewrites (false)
+max_code_length: 10000                # Maximum allowed code length in characters
+
+# LLM configuration
+llm:
+  # Models for evolution
+  models:
+    # List of available models with their weights
+    - name: "gemini-2.0-flash-lite"
+      weight: 0.8
+    - name: "gemini-2.0-flash"
+      weight: 0.2
+
+  # Models for LLM feedback
+  evaluator_models:
+    # List of available models with their weights
+    - name: "gemini-2.0-flash-lite"
+      weight: 0.8
+    - name: "gemini-2.0-flash"
+      weight: 0.2
+
+  # API configuration
+  api_base: "https://generativelanguage.googleapis.com/v1beta/openai/"  # Base URL for API (change for non-OpenAI models)
+  api_key: null                       # API key (defaults to OPENAI_API_KEY env variable)
+
+  # Generation parameters
+  temperature: 0.7                    # Temperature for generation (higher = more creative)
+  top_p: 0.95                         # Top-p sampling parameter
+  max_tokens: 4096                    # Maximum tokens to generate
 `;
 
 async function readFileAsText(file: File): Promise<string> {
@@ -36,10 +78,6 @@ export default function ProjectHubPage(){
   const [seedFileName, setSeedFileName] = useState<string>('');
   const [evaluatorText, setEvaluatorText] = useState<string>('');
   const [evalFileName, setEvalFileName] = useState<string>('');
-  const [metrics, setMetrics] = useState<Metric[]>([
-    { id: 'latency', label: 'latency', weight: 0.5 },
-    { id: 'accuracy', label: 'accuracy', weight: 0.5 },
-  ]);
   const [cfgFile, setCfgFile] = useState<File | null>(null);
   const [cfgFileName, setCfgFileName] = useState<string>('');
   const [isStarting, setIsStarting] = useState<boolean>(false);
@@ -58,7 +96,6 @@ export default function ProjectHubPage(){
       const result = await startEvolution({
         code: usedSeed,
         evaluator: evaluatorText,
-        metrics,
         configFile: cfgFile || undefined,
       });
 
@@ -81,10 +118,10 @@ export default function ProjectHubPage(){
   };
 
   return (
-    <div>
+    <div className="min-h-screen">
       {/* Landing Hero */}
       <section id="project-hub-hero" className="relative overflow-hidden bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-14 md:py-20">
+        <div className="w-full min-h-screen px-4 py-14 md:py-20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">AlphaEvolve · Evolutionary Coding</div>
@@ -151,16 +188,9 @@ export default function ProjectHubPage(){
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-sm font-medium text-slate-900">Evaluator</div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
-                      <span>Upload</span>
-                      <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py,.json,.yaml,.yml,.txt"
-                        onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
-                    </label>
-                    {evalFileName && (
-                      <button data-testid="clear-evaluator" className="rounded-md px-2 py-1 hover:bg-slate-100" onClick={()=>{ setEvaluatorText(''); setEvalFileName(''); }}>Clear</button>
-                    )}
-                  </div>
+                  {evalFileName && (
+                    <button data-testid="clear-evaluator" className="rounded-md px-2 py-1 hover:bg-slate-100" onClick={()=>{ setEvaluatorText(''); setEvalFileName(''); }}>Clear</button>
+                  )}
                 </div>
                 {evalFileName ? (
                   <>
@@ -168,54 +198,38 @@ export default function ProjectHubPage(){
                     <textarea value={evaluatorText} readOnly className="h-40 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 text-slate-900 opacity-80"/>
                   </>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">Upload an evaluator script/spec (.py/.json/.yaml)</div>
+                  <label className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 cursor-pointer">
+                    Upload an evaluator script (.py)
+                    <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py" onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
+                  </label>
                 )}
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="mb-3 text-sm font-medium text-slate-900">Evaluation Metrics</div>
-                {metrics.map((m, i)=> (
-                  <div key={m.id} className="mb-2 flex items-center gap-3">
-                    <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{m.label}</span>
-                    <input data-testid={`metric-${m.id}`} type="range" min={0} max={1} step={0.05} value={m.weight}
-                      onChange={(e)=>{ const v=[...metrics]; v[i].weight=Number(e.target.value); setMetrics(v); }} className="flex-1"/>
-                    <span className="w-12 text-right text-xs text-slate-500">{m.weight.toFixed(2)}</span>
-                  </div>
-                ))}
-                <button data-testid="add-metric" className="text-xs text-violet-600 hover:underline"
-                  onClick={()=> setMetrics([...metrics, { id: `m-${metrics.length+1}`, label: 'custom', weight: 0.3 }])}>+ Add metric</button>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="mb-3 text-sm font-medium text-slate-900">Run Configuration</div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
-                    <span>Upload</span>
+                {cfgFileName ? (
+                  <>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <div className="truncate">Uploaded: {cfgFileName}</div>
+                      <button data-testid="clear-config" className="rounded-md px-2 py-1 hover:bg-slate-100" onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}>Clear</button>
+                    </div>
+                  </>
+              ) : (
+                  <label className="mt-2 flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                    Upload a config file (.yaml)
                     <input
                       data-testid="upload-config"
                       type="file"
                       className="hidden"
-                      accept=".json,.yaml,.yml"
+                      accept=".yaml"
                       onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); }}
                     />
                   </label>
-                  {cfgFileName && (
-                    <button
-                      data-testid="clear-config"
-                      className="rounded-md px-2 py-1 hover:bg-slate-100"
-                      onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                {cfgFileName ? (
-                  <div className="mt-2 truncate text-xs text-slate-500">Uploaded: {cfgFileName}</div>
-                ) : (
-                  <div className="mt-2 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                    Upload a config file (.json/.yaml)
-                  </div>
                 )}
+                <details className="mt-3 text-xs text-slate-500">
+                  <summary className="cursor-pointer">View example config</summary>
+                  <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono whitespace-pre leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
+                </details>
               </div>
             </div>
           </div>
