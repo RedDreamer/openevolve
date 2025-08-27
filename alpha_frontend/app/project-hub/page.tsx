@@ -68,9 +68,9 @@ export default function ProjectHubPage(){
         if (result.path) {
           localStorage.setItem('currentOutputPath', result.path);
         }
-        // Navigate to monitor page with runId and path
+        // Navigate directly to visualization page with runId and path
         const pathParam = result.path ? `&path=${encodeURIComponent(result.path)}` : '';
-        router.push(`/monitor?runId=${result.runId}${pathParam}`);
+        router.push(`/visualize?runId=${result.runId}${pathParam}`);
       }
     } catch (error) {
       console.error('Failed to start evolution:', error);
