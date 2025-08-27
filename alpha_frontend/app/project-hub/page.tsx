@@ -148,6 +148,7 @@ export default function ProjectHubPage(){
                 <div className="text-sm font-medium text-slate-900">演化过程概览</div>
                 <div className="mt-2 text-xs text-slate-500">示意图（Demo 数据）</div>
                 <div className="mt-3"><LineChart data={[0.1,0.12,0.2,0.18,0.28,0.33,0.38,0.42,0.5,0.58,0.63,0.71,0.76,0.8,0.83]} height={160}/></div>
+
               </div>
             </div>
           </div>
@@ -227,6 +228,7 @@ export default function ProjectHubPage(){
                   </>
                 ) : (
                   <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
                     Upload an evaluator script (.py)
                     <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py" onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
                   </label>
@@ -250,6 +252,7 @@ export default function ProjectHubPage(){
                   <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
                 ) : (
                   <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
                     Upload a config file (.yaml)
                     <input
                       data-testid="upload-config"
