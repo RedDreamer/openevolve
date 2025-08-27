@@ -120,44 +120,52 @@ export default function ProjectHubPage(){
   return (
     <div className="min-h-screen">
       {/* Landing Hero */}
-      <section id="project-hub-hero" className="relative overflow-hidden bg-white">
-        <div className="w-full min-h-screen px-4 py-14 md:py-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">AlphaEvolve · Evolutionary Coding</div>
-              <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-slate-900">自动演化与评估，让代码自我进化</h1>
-              <p className="mt-3 text-slate-600">AlphaEvolve 将遗传算法与多指标评估结合，自动产生候选实现、并在多个岛屿并行演化。实时监控整体性能曲线，比较不同变体，快速找到更优解。</p>
-              <ul className="mt-5 space-y-2 text-sm text-slate-600 list-disc list-inside">
-                <li>支持自定义 <span className="font-medium">Seed Algorithm</span> 与 <span className="font-medium">Evaluator</span></li>
-                <li>多指标优化（Latency/Accuracy/…）</li>
-                <li>监控面板与结果工作台，便于对比与回溯</li>
-              </ul>
-              <div className="mt-6 flex items-center gap-3">
-                <button data-testid="hero-start" onClick={handleHeroStart}
-                  className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-violet-700">Start</button>
-                {!started && <span className="text-sm text-slate-500">点击 Start 后将解锁页面功能</span>}
+      {!started && (
+        <section id="project-hub-hero" className="relative overflow-hidden bg-white">
+          <div className="w-full min-h-screen px-4 py-14 md:py-20">
+            <div className="grid items-center gap-8 md:grid-cols-2">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">AlphaEvolve · Evolutionary Coding</div>
+                <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-slate-900">自动演化与评估，让代码自我进化</h1>
+                <p className="mt-3 text-slate-600">AlphaEvolve 将遗传算法与多指标评估结合，自动产生候选实现、并在多个岛屿并行演化。实时监控整体性能曲线，比较不同变体，快速找到更优解。</p>
+                <ul className="mt-5 list-inside list-disc space-y-2 text-sm text-slate-600">
+                  <li>支持自定义 <span className="font-medium">Seed Algorithm</span> 与 <span className="font-medium">Evaluator</span></li>
+                  <li>多指标优化（Latency/Accuracy/…）</li>
+                  <li>监控面板与结果工作台，便于对比与回溯</li>
+                </ul>
+                <div className="mt-6 flex items-center gap-3">
+                  <button
+                    data-testid="hero-start"
+                    onClick={handleHeroStart}
+                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-violet-700"
+                  >
+                    Start
+                  </button>
+                  <span className="text-sm text-slate-500">点击 Start 后将解锁页面功能</span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="text-sm font-medium text-slate-900">演化过程概览</div>
+                <div className="mt-2 text-xs text-slate-500">示意图（Demo 数据）</div>
+                <div className="mt-3"><LineChart data={[0.1,0.12,0.2,0.18,0.28,0.33,0.38,0.42,0.5,0.58,0.63,0.71,0.76,0.8,0.83]} height={160}/></div>
+
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="text-sm font-medium text-slate-900">演化过程概览</div>
-              <div className="mt-2 text-xs text-slate-500">示意图（Demo 数据）</div>
-              <div className="mt-3"><LineChart data={[0.1,0.12,0.2,0.18,0.28,0.33,0.38,0.42,0.5,0.58,0.63,0.71,0.76,0.8,0.83]} height={160}/></div>
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Hub Editor Section — only visible after started */}
       {started && (
-        <div id="hub" ref={hubRef} className="p-4 space-y-4">
+        <div id="hub" ref={hubRef} className="mx-auto max-w-6xl space-y-6 p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">Project Hub</h2>
               <p className="text-sm text-slate-500">Define problems and start evolution</p>
             </div>
-            <button 
+            <button
               data-testid="start-evolution"
-              className="rounded-xl bg-violet-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-violet-700 disabled:opacity-50"
+              className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-violet-700 disabled:opacity-50"
               onClick={handleStartEvolution}
               disabled={isStarting}
             >
@@ -165,18 +173,29 @@ export default function ProjectHubPage(){
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-sm font-medium text-slate-900">Seed Algorithm</div>
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
                     <span>Upload</span>
-                    <input data-testid="upload-seed" type="file" className="hidden" accept=".py,.txt"
-                      onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setSeedCode(await readFileAsText(f)); setSeedFileName(f.name); }} />
+                    <input
+                      data-testid="upload-seed"
+                      type="file"
+                      className="hidden"
+                      accept=".py,.txt"
+                      onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setSeedCode(await readFileAsText(f)); setSeedFileName(f.name); }}
+                    />
                   </label>
                   {seedFileName && (
-                    <button data-testid="clear-seed" className="rounded-md px-2 py-1 hover:bg-slate-100" onClick={()=>{ setSeedCode(''); setSeedFileName(''); }}>Clear</button>
+                    <button
+                      data-testid="clear-seed"
+                      className="rounded-md px-2 py-1 hover:bg-slate-100"
+                      onClick={()=>{ setSeedCode(''); setSeedFileName(''); }}
+                    >
+                      Clear
+                    </button>
                   )}
                 </div>
               </div>
@@ -184,38 +203,56 @@ export default function ProjectHubPage(){
               <MonacoEditor value={usedSeed} onChange={seedCode?undefined:setCode} height={420}/>
             </div>
 
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-sm font-medium text-slate-900">Evaluator</div>
                   {evalFileName && (
-                    <button data-testid="clear-evaluator" className="rounded-md px-2 py-1 hover:bg-slate-100" onClick={()=>{ setEvaluatorText(''); setEvalFileName(''); }}>Clear</button>
+                    <button
+                      data-testid="clear-evaluator"
+                      className="rounded-md px-2 py-1 hover:bg-slate-100"
+                      onClick={()=>{ setEvaluatorText(''); setEvalFileName(''); }}
+                    >
+                      Clear
+                    </button>
                   )}
                 </div>
                 {evalFileName ? (
                   <>
                     <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {evalFileName}</div>
-                    <textarea value={evaluatorText} readOnly className="h-40 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 text-slate-900 opacity-80"/>
+                    <textarea
+                      value={evaluatorText}
+                      readOnly
+                      className="h-40 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 text-slate-900 opacity-80"
+                    />
                   </>
                 ) : (
-                  <label className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 cursor-pointer">
+                  <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
                     Upload an evaluator script (.py)
                     <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py" onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
                   </label>
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="mb-3 text-sm font-medium text-slate-900">Run Configuration</div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-sm font-medium text-slate-900">Run Configuration</div>
+                  {cfgFileName && (
+                    <button
+                      data-testid="clear-config"
+                      className="rounded-md px-2 py-1 hover:bg-slate-100"
+                      onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
                 {cfgFileName ? (
-                  <>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <div className="truncate">Uploaded: {cfgFileName}</div>
-                      <button data-testid="clear-config" className="rounded-md px-2 py-1 hover:bg-slate-100" onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}>Clear</button>
-                    </div>
-                  </>
-              ) : (
-                  <label className="mt-2 flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                  <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
+                ) : (
+                  <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
                     Upload a config file (.yaml)
                     <input
                       data-testid="upload-config"
@@ -228,7 +265,7 @@ export default function ProjectHubPage(){
                 )}
                 <details className="mt-3 text-xs text-slate-500">
                   <summary className="cursor-pointer">View example config</summary>
-                  <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono whitespace-pre leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
+                  <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
                 </details>
               </div>
             </div>
