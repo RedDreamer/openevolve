@@ -63,7 +63,7 @@ export default function ProjectHubPage(){
       });
 
       // Save runId to localStorage
-      if (result.ok && result.runId) {
+      if (result.runId) {
         localStorage.setItem('currentRunId', result.runId);
         if (result.path) {
           localStorage.setItem('currentOutputPath', result.path);
