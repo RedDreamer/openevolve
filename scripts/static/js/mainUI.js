@@ -29,31 +29,26 @@ if (!document.getElementById('custom-dark-toggle')) {
 
 // Tab switching logic
 const tabs = ["branching", "performance", "list"];
-tabs.forEach(tab => {
-    document.getElementById(`tab-${tab}`).addEventListener('click', function() {
+const tabsContainer = document.querySelector('.tabs');
+if (tabsContainer) {
+    tabsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tab');
+        if (!btn) return;
+        const tab = btn.id.replace('tab-', '');
         tabs.forEach(t => {
-            document.getElementById(`tab-${t}`).classList.remove('active');
+            document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
             const view = document.getElementById(`view-${t}`);
-            if (view) view.style.display = 'none';
+            if (view) view.style.display = t === tab ? 'block' : 'none';
         });
-        this.classList.add('active');
-        const view = document.getElementById(`view-${tab}`);
-        if (view) view.style.display = 'block';
-        // Synchronize node selection when switching tabs
         if (tab === 'list' || tab === 'branching') {
             if (selectedProgramId) {
                 selectProgram(selectedProgramId);
                 showSidebarContent(window._lastSelectedNodeData || null);
             }
         }
-        // Disable page scroll for graph tabs
-        if (tab === 'branching' || tab === 'performance') {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
+        document.body.style.overflow = (tab === 'branching' || tab === 'performance') ? 'hidden' : '';
     });
-});
+}
 
 // Dark mode logic
 function setTheme(theme) {

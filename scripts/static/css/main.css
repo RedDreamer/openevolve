@@ -37,7 +37,7 @@
 html, body {
     height: 100%;
     margin: 0;
-    padding: 0 2em;
+    padding: 0;
 }
 body {
     font-family: Arial, sans-serif;
@@ -156,6 +156,8 @@ h1 span { font-size: 0.5em; color: #666; }
     border: 1px solid var(--tab-border);
     border-bottom: none;
     color: var(--text-color);
+    font: inherit;
+    background-clip: padding-box;
 }
 .tab.active {
     background: var(--tab-active-bg);
@@ -172,11 +174,22 @@ h1 span { font-size: 0.5em; color: #666; }
     margin-left: 0.5em;
 }
 #graph {
-    width: 100vw;
+    width: 100%;
     height: calc(100vh - var(--toolbar-height));
     min-height: 300px;
     position: relative;
     overflow: hidden;
+}
+#view-branching,
+#view-list,
+#view-performance,
+#view-prompts {
+    padding-top: var(--toolbar-height);
+    padding-left: 2em;
+    padding-right: 2em;
+}
+#view-performance {
+    padding-top: calc(var(--toolbar-height) + 1em);
 }
 #graph svg {
     width: 100%;
@@ -184,7 +197,7 @@ h1 span { font-size: 0.5em; color: #666; }
     display: block;
 }
 #view-performance {
-    width: 100vw;
+    width: 100%;
     height: calc(100vh - var(--toolbar-height));
     min-height: 300px;
     position: relative;
