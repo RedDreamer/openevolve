@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import MonacoEditor from '@/components/MonacoEditor';
 import { useStarted } from '@/lib/state';
 import { startEvolution } from '@/lib/api';
@@ -87,8 +87,13 @@ export default function ProjectHubPage(){
 
   const handleHeroStart = () => {
     setStarted(true);
-    setTimeout(()=> hubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
+
+  useEffect(() => {
+    if (started) {
+      hubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [started]);
 
   const handleStartEvolution = async () => {
     setIsStarting(true);
