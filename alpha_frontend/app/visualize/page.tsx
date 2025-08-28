@@ -40,43 +40,58 @@ export default function VisualizePage() {
     (window as any).VISUALIZER_API_BASE = API_BASE;
     const head = document.head;
     let cssLink: HTMLLinkElement | null = null;
-    if (!document.getElementById('visualizer-css')) {
-      cssLink = document.createElement('link');
-      cssLink.id = 'visualizer-css';
-      cssLink.rel = 'stylesheet';
-      cssLink.href = '/visualizer/css/main.css';
-      head.appendChild(cssLink);
-    }
-    let d3Script: HTMLScriptElement | null = null;
-    if (!document.getElementById('d3-script')) {
-      d3Script = document.createElement('script');
-      d3Script.id = 'd3-script';
-      d3Script.src = 'https://d3js.org/d3.v7.min.js';
-      head.appendChild(d3Script);
-    }
-    const scripts = [
-      '/visualizer/js/state.js',
-      '/visualizer/js/main.js',
-      '/visualizer/js/mainUI.js',
-      '/visualizer/js/sidebar.js',
-      '/visualizer/js/graph.js',
-      '/visualizer/js/performance.js',
-      '/visualizer/js/list.js',
-    ];
-    const addedScripts: HTMLScriptElement[] = [];
-    scripts.forEach(src => {
-      if (!document.querySelector(`script[src="${src}"]`)) {
-        const s = document.createElement('script');
-        s.type = 'module';
-        s.src = src;
-        document.body.appendChild(s);
-        addedScripts.push(s);
+    let createdD3: HTMLScriptElement | null = null;
+
+    const load = async () => {
+      if (!document.getElementById('visualizer-css')) {
+        cssLink = document.createElement('link');
+        cssLink.id = 'visualizer-css';
+        cssLink.rel = 'stylesheet';
+        cssLink.href = '/visualizer/css/main.css';
+        head.appendChild(cssLink);
       }
-    });
+
+      await new Promise<void>(resolve => {
+        const existing = document.getElementById('d3-script');
+        if (existing) return resolve();
+        createdD3 = document.createElement('script');
+        createdD3.id = 'd3-script';
+        createdD3.src = 'https://d3js.org/d3.v7.min.js';
+        createdD3.onload = () => resolve();
+        head.appendChild(createdD3);
+      });
+
+      const scripts = [
+        '/visualizer/js/state.js',
+        '/visualizer/js/main.js',
+        '/visualizer/js/mainUI.js',
+        '/visualizer/js/sidebar.js',
+        '/visualizer/js/graph.js',
+        '/visualizer/js/performance.js',
+        '/visualizer/js/list.js',
+      ];
+      const addedScripts: HTMLScriptElement[] = [];
+      scripts.forEach(src => {
+        if (!document.querySelector(`script[src="${src}"]`)) {
+          const s = document.createElement('script');
+          s.type = 'module';
+          s.src = src;
+          document.body.appendChild(s);
+          addedScripts.push(s);
+        }
+      });
+
+      return () => {
+        cssLink?.remove();
+        createdD3?.remove();
+        addedScripts.forEach(s => s.remove());
+      };
+    };
+
+    const cleanupPromise = load();
+
     return () => {
-      cssLink?.remove();
-      d3Script?.remove();
-      addedScripts.forEach(s => s.remove());
+      cleanupPromise.then(cleanup => cleanup && cleanup());
     };
   }, [outputPath]);
 
@@ -125,14 +140,15 @@ export default function VisualizePage() {
           <div className="tab" id="tab-list">List</div>
         </div>
         <label className="toolbar-label" htmlFor="metric-select">Metric:
-          <select id="metric-select">
-            <option value="combined_score" selected>combined_score</option>
+          <select id="metric-select" defaultValue="combined_score">
+            <option value="combined_score">combined_score</option>
           </select>
         </label>
         <label className="toolbar-label" htmlFor="highlight-select">Highlight:
-          <select id="highlight-select">
+          <select id="highlight-select" defaultValue="top">
             <option value="none">None</option>
-            <option value="top" selected>Top score</option>
+            <option value="top">Top score</option>
+
             <option value="first">First generation</option>
             <option value="failed">Failed</option>
             <option value="unset">Metric unset</option>
@@ -162,10 +178,12 @@ export default function VisualizePage() {
           />
           <select
             id="list-sort"
+            defaultValue="generation"
             style={{ fontSize: '1em', padding: '0.3em 1em', borderRadius: '6px', border: '1px solid #ccc' }}
           >
             <option value="id">Sort by ID</option>
-            <option value="generation" selected>Sort by generation</option>
+            <option value="generation">Sort by generation</option>
+
             <option value="island">Sort by island</option>
             <option value="score">Sort by score</option>
           </select>
