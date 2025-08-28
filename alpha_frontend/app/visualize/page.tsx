@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://localhost:8080';
 
 export default function VisualizePage() {
   const [runId, setRunId] = useState<string | null>(null);
@@ -31,6 +30,56 @@ export default function VisualizePage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!outputPath) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('path') !== outputPath) {
+      url.searchParams.set('path', outputPath);
+      window.history.replaceState({}, '', url.toString());
+    }
+    (window as any).VISUALIZER_API_BASE = API_BASE;
+    const head = document.head;
+    let cssLink: HTMLLinkElement | null = null;
+    if (!document.getElementById('visualizer-css')) {
+      cssLink = document.createElement('link');
+      cssLink.id = 'visualizer-css';
+      cssLink.rel = 'stylesheet';
+      cssLink.href = '/visualizer/css/main.css';
+      head.appendChild(cssLink);
+    }
+    let d3Script: HTMLScriptElement | null = null;
+    if (!document.getElementById('d3-script')) {
+      d3Script = document.createElement('script');
+      d3Script.id = 'd3-script';
+      d3Script.src = 'https://d3js.org/d3.v7.min.js';
+      head.appendChild(d3Script);
+    }
+    const scripts = [
+      '/visualizer/js/state.js',
+      '/visualizer/js/main.js',
+      '/visualizer/js/mainUI.js',
+      '/visualizer/js/sidebar.js',
+      '/visualizer/js/graph.js',
+      '/visualizer/js/performance.js',
+      '/visualizer/js/list.js',
+    ];
+    const addedScripts: HTMLScriptElement[] = [];
+    scripts.forEach(src => {
+      if (!document.querySelector(`script[src="${src}"]`)) {
+        const s = document.createElement('script');
+        s.type = 'module';
+        s.src = src;
+        document.body.appendChild(s);
+        addedScripts.push(s);
+      }
+    });
+    return () => {
+      cssLink?.remove();
+      d3Script?.remove();
+      addedScripts.forEach(s => s.remove());
+    };
+  }, [outputPath]);
+
   const handleStop = async () => {
     if (!runId) return;
     try {
@@ -49,9 +98,7 @@ export default function VisualizePage() {
   };
 
   if (!outputPath) {
-    return (
-      <div className="p-4">No visualization available.</div>
-    );
+    return <div className="p-4">No visualization available.</div>;
   }
 
   return (
@@ -66,10 +113,67 @@ export default function VisualizePage() {
           </button>
         )}
       </div>
-      <iframe
-        src={`${VISUALIZER_BASE}/?path=${encodeURIComponent(outputPath)}`}
-        className="w-full h-[calc(100vh-5rem)] border-0"
-      />
+      <div id="toolbar">
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: '220px' }}>
+          <span style={{ fontSize: '1.1em', fontWeight: 'bold' }}>OpenEvolve Evolution Visualizer</span>
+          <span id="checkpoint-label" style={{ fontSize: '0.9em', color: '#888' }}>Checkpoint: None</span>
+        </div>
+        <div className="toolbar-spacer"></div>
+        <div className="tabs">
+          <div className="tab active" id="tab-branching">Branching</div>
+          <div className="tab" id="tab-performance">Performance</div>
+          <div className="tab" id="tab-list">List</div>
+        </div>
+        <label className="toolbar-label" htmlFor="metric-select">Metric:
+          <select id="metric-select">
+            <option value="combined_score" selected>combined_score</option>
+          </select>
+        </label>
+        <label className="toolbar-label" htmlFor="highlight-select">Highlight:
+          <select id="highlight-select">
+            <option value="none">None</option>
+            <option value="top" selected>Top score</option>
+            <option value="first">First generation</option>
+            <option value="failed">Failed</option>
+            <option value="unset">Metric unset</option>
+          </select>
+        </label>
+        <div className="toolbar-darkmode">
+          <label className="toolbar-label">Dark mode:</label>
+          <input type="checkbox" id="darkmode-toggle" />
+          <span id="darkmode-label">🌙</span>
+        </div>
+      </div>
+      <div id="sidebar">
+        <div id="sidebar-content">
+          <span style={{ color: '#888' }}>Select a node to see details.</span>
+        </div>
+      </div>
+      <div id="view-branching" className="active" style={{ paddingTop: '3.5em' }}>
+        <div id="graph"></div>
+      </div>
+      <div id="view-list" style={{ display: 'none', paddingTop: '3.5em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1em', marginBottom: '1em' }}>
+          <input
+            id="list-search"
+            type="text"
+            placeholder="Search program ID..."
+            style={{ fontSize: '1em', padding: '0.4em 1em', borderRadius: '6px', border: '1px solid #ccc', minWidth: '220px' }}
+          />
+          <select
+            id="list-sort"
+            style={{ fontSize: '1em', padding: '0.3em 1em', borderRadius: '6px', border: '1px solid #ccc' }}
+          >
+            <option value="id">Sort by ID</option>
+            <option value="generation" selected>Sort by generation</option>
+            <option value="island">Sort by island</option>
+            <option value="score">Sort by score</option>
+          </select>
+        </div>
+        <div id="node-list-container"></div>
+      </div>
+      <div id="view-performance" style={{ paddingTop: '4.5em' }}></div>
+      <div id="view-prompts" style={{ paddingTop: '3.5em' }}></div>
     </div>
   );
 }
