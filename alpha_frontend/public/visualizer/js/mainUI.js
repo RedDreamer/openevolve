@@ -29,29 +29,34 @@ if (!document.getElementById('custom-dark-toggle')) {
 
 // Tab switching logic
 const tabs = ["branching", "performance", "list"];
-tabs.forEach(tab => {
-    document.getElementById(`tab-${tab}`).addEventListener('click', function() {
-        tabs.forEach(t => {
-            document.getElementById(`tab-${t}`).classList.remove('active');
-            const view = document.getElementById(`view-${t}`);
-            if (view) view.style.display = 'none';
-        });
-        this.classList.add('active');
-        const view = document.getElementById(`view-${tab}`);
-        if (view) view.style.display = 'block';
-        // Synchronize node selection when switching tabs
-        if (tab === 'list' || tab === 'branching') {
-            if (selectedProgramId) {
-                selectProgram(selectedProgramId);
-                showSidebarContent(window._lastSelectedNodeData || null);
+document.addEventListener('DOMContentLoaded', () => {
+    tabs.forEach(tab => {
+        const tabEl = document.getElementById(`tab-${tab}`);
+        if (!tabEl) return;
+        tabEl.addEventListener('click', function () {
+            tabs.forEach(t => {
+                const tabNode = document.getElementById(`tab-${t}`);
+                if (tabNode) tabNode.classList.remove('active');
+                const view = document.getElementById(`view-${t}`);
+                if (view) view.style.display = 'none';
+            });
+            this.classList.add('active');
+            const view = document.getElementById(`view-${tab}`);
+            if (view) view.style.display = 'block';
+            // Synchronize node selection when switching tabs
+            if (tab === 'list' || tab === 'branching') {
+                if (selectedProgramId) {
+                    selectProgram(selectedProgramId);
+                    showSidebarContent(window._lastSelectedNodeData || null);
+                }
             }
-        }
-        // Disable page scroll for graph tabs
-        if (tab === 'branching' || tab === 'performance') {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
+            // Disable page scroll for graph tabs
+            if (tab === 'branching' || tab === 'performance') {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
     });
 });
 
