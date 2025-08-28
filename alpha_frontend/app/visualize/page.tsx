@@ -32,13 +32,11 @@ export default function VisualizePage() {
 
   useEffect(() => {
     if (!outputPath) return;
-
     const url = new URL(window.location.href);
     if (url.searchParams.get('path') !== outputPath) {
       url.searchParams.set('path', outputPath);
       window.history.replaceState({}, '', url.toString());
     }
-
     (window as any).VISUALIZER_API_BASE = API_BASE;
     const head = document.head;
     let cssLink: HTMLLinkElement | null = null;
@@ -150,6 +148,7 @@ export default function VisualizePage() {
           <select id="highlight-select" defaultValue="top">
             <option value="none">None</option>
             <option value="top">Top score</option>
+
             <option value="first">First generation</option>
             <option value="failed">Failed</option>
             <option value="unset">Metric unset</option>
@@ -184,6 +183,7 @@ export default function VisualizePage() {
           >
             <option value="id">Sort by ID</option>
             <option value="generation">Sort by generation</option>
+
             <option value="island">Sort by island</option>
             <option value="score">Sort by score</option>
           </select>
