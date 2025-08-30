@@ -126,6 +126,7 @@ export default function ProjectHubPage(){
     <div className="min-h-screen">
       {/* Landing Hero */}
       {!started && (
+        <>
         <section id="project-hub-hero" className="relative overflow-hidden bg-white">
           <div className="w-full min-h-screen px-4 py-14 md:py-20">
             <div className="grid items-center gap-8 md:grid-cols-2">
@@ -152,12 +153,93 @@ export default function ProjectHubPage(){
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-medium text-slate-900">演化过程概览</div>
                 <div className="mt-2 text-xs text-slate-500">示意图（Demo 数据）</div>
-                <div className="mt-3"><LineChart data={[0.1,0.12,0.2,0.18,0.28,0.33,0.38,0.42,0.5,0.58,0.63,0.71,0.76,0.8,0.83]} height={160}/></div>
-
+                <div className="mt-3">
+                  <LineChart data={[0.1,0.12,0.2,0.18,0.28,0.33,0.38,0.42,0.5,0.58,0.63,0.71,0.76,0.8,0.83,0.86,0.9,0.93,0.95,0.98]} height={180}/>
+                </div>
               </div>
             </div>
           </div>
         </section>
+        <section className="bg-slate-50 px-4 py-16">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="text-center text-2xl font-bold text-slate-900">特色与优势</h2>
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">自动演化</h3>
+                <p className="mt-2 text-sm text-slate-600">根据评估指标自动生成和优化代码实现，不断提高性能。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">自定义评估</h3>
+                <p className="mt-2 text-sm text-slate-600">拥抱您自定义的评估脚本，以导向演化期望的目标。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">交互式监控</h3>
+                <p className="mt-2 text-sm text-slate-600">实时可视化评估数据，便于比较不同方案和追踪演化过程。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="px-4 py-16">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="text-center text-2xl font-bold text-slate-900">工作原理</h2>
+            <div className="mt-8 grid gap-6 md:grid-cols-4">
+              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+                <div className="text-lg font-semibold text-slate-900">1. 提供 Seed</div>
+                <p className="mt-2 text-sm text-slate-600">上传初始算法或直接在编辑器中编写。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+                <div className="text-lg font-semibold text-slate-900">2. 编写评估</div>
+                <p className="mt-2 text-sm text-slate-600">定义度量标准，引导演化方向。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+                <div className="text-lg font-semibold text-slate-900">3. 自动演化</div>
+                <p className="mt-2 text-sm text-slate-600">系统并行生成变体并运行评估。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+                <div className="text-lg font-semibold text-slate-900">4. 对比结果</div>
+                <p className="mt-2 text-sm text-slate-600">监控性能曲线，快速挑选更优解。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="bg-slate-50 px-4 py-16">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="text-center text-2xl font-bold text-slate-900">示例演化结果</h2>
+            <div className="mt-8 overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-100 text-slate-900">
+                  <tr>
+                    <th className="p-3">Variant</th>
+                    <th className="p-3">Latency</th>
+                    <th className="p-3">Accuracy</th>
+                    <th className="p-3">Iterations</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="p-3 font-medium text-slate-900">Baseline</td>
+                    <td className="p-3">120ms</td>
+                    <td className="p-3">92%</td>
+                    <td className="p-3">—</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-3 font-medium text-slate-900">Variant A</td>
+                    <td className="p-3">98ms</td>
+                    <td className="p-3">93%</td>
+                    <td className="p-3">15</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium text-slate-900">Variant B</td>
+                    <td className="p-3">85ms</td>
+                    <td className="p-3">95%</td>
+                    <td className="p-3">30</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        </>
       )}
 
       {/* Hub Editor Section — only visible after started */}
