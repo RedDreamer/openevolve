@@ -126,6 +126,7 @@ export default function ProjectHubPage(){
     <div className="min-h-screen">
       {/* Landing Hero */}
       {!started && (
+        <>
         <section id="project-hub-hero" className="relative overflow-hidden bg-white">
           <div className="w-full min-h-screen px-4 py-14 md:py-20">
             <div className="grid items-center gap-8 md:grid-cols-2">
@@ -158,6 +159,26 @@ export default function ProjectHubPage(){
             </div>
           </div>
         </section>
+        <section className="bg-slate-50 px-4 py-16">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="text-center text-2xl font-bold text-slate-900">特色与优势</h2>
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">自动演化</h3>
+                <p className="mt-2 text-sm text-slate-600">根据评估指标自动生成和优化代码实现，不断提高性能。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">自定义评估</h3>
+                <p className="mt-2 text-sm text-slate-600">拥抱您自定义的评估脚本，以导向演化期望的目标。</p>
+              </div>
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">交互式监控</h3>
+                <p className="mt-2 text-sm text-slate-600">实时可视化评估数据，便于比较不同方案和追踪演化过程。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        </>
       )}
 
       {/* Hub Editor Section — only visible after started */}
