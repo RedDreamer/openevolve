@@ -14,9 +14,9 @@
         </div>
         <div class="toolbar-spacer"></div>
         <div class="tabs">
-            <button class="tab active" id="tab-branching" type="button">Branching</button>
-            <button class="tab" id="tab-performance" type="button">Performance</button>
-            <button class="tab" id="tab-list" type="button">List</button>
+            <div class="tab active" id="tab-branching">Branching</div>
+            <div class="tab" id="tab-performance">Performance</div>
+            <div class="tab" id="tab-list">List</div>
         </div>
         <label class="toolbar-label" for="metric-select">Metric:
         <select id="metric-select">
@@ -43,10 +43,10 @@
             </span>
         </div>
     </div>
-    <div id="view-branching" class="active">
+    <div id="view-branching" class="active" style="padding-top:3.5em;">
         <div id="graph"></div>
     </div>
-    <div id="view-list" style="display:none;">
+    <div id="view-list" style="display:none;padding-top:3.5em;">
         <div style="display:flex;align-items:center;gap:1em;margin-bottom:1em;">
             <input id="list-search" type="text" placeholder="Search program ID..." style="font-size:1em;padding:0.4em 1em;border-radius:6px;border:1px solid #ccc;min-width:220px;">
             <select id="list-sort" style="font-size:1em;padding:0.3em 1em;border-radius:6px;border:1px solid #ccc;">
@@ -58,8 +58,8 @@
         </div>
         <div id="node-list-container"></div>
     </div>
-    <div id="view-performance" style="display:none;"></div>
-    <div id="view-prompts" style="display:none;"></div>
+    <div id="view-performance" style="padding-top:4.5em;"></div>
+    <div id="view-prompts" style="padding-top:3.5em;"></div>
     <script type="module" src="{{ url_for('static', filename='js/state.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/mainUI.js') }}"></script>
