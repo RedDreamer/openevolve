@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 // import { generateWorld } from '@/lib/world';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://localhost:8080';
 
 // Demo data components commented out for now
 // function IslandCard({ island, currentGen }:{ island: ReturnType<typeof generateWorld>['islands'][number]; currentGen:number }){
@@ -117,47 +118,58 @@ export default function MonitorPage(){
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Monitoring Dashboard</h1>
-          <p className="text-sm text-slate-600">Track active evolution runs in real time</p>
+          <h1 className="text-xl font-semibold text-slate-900">Monitoring Dashboard</h1>
+          <p className="text-sm text-slate-500">Overall performance and island states</p>
           {runId && (
-            <p className="mt-1 text-xs text-slate-500">
-              Run ID: {runId} • Status: <span className="font-medium">{status}</span>
+            <p className="text-xs text-slate-500 mt-1">
+              Run ID: {runId} | Status: {status}
             </p>
           )}
         </div>
-        {runId && outputPath && (
-          <div className="flex gap-2">
-            <a
-              href={`/visualize?path=${encodeURIComponent(outputPath)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
-            >
-              Visualize
-            </a>
-            <button
-              onClick={handleStop}
-              className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
-            >
-              Stop
-            </button>
-          </div>
-        )}
-      </header>
+        <div className="flex items-center gap-2">
+          {runId && outputPath && (
+            <>
+              <a
+                href={`${VISUALIZER_BASE}/?path=${encodeURIComponent(outputPath)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-green-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-green-700"
+              >
+                Visualize
+              </a>
+              <button
+                onClick={handleStop}
+                className="rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
+              >
+                Stop
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {/* Demo charts and island cards commented out for now */}
+      {/* <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mb-2 text-sm font-medium text-slate-900">Overall Best Fitness</div>
+        <LineChart data={overallToNow} height={220} testid="chart-overall" />
+      </div>
 
-      {/* Future charts and island cards will go here */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {world.islands.map((isl)=> (
+          <IslandCard key={isl.id} island={isl} currentGen={gen} />
+        ))}
+      </div> */}
 
-      {!runId && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-          <p className="font-medium text-slate-600">No active evolution</p>
-          <p className="mt-1 text-sm text-slate-500">
+      {!runId ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div className="text-sm font-medium text-amber-800">No active evolution</div>
+          <p className="text-sm text-amber-700 mt-1">
             Start an evolution from the Project Hub to see real-time monitoring data here.
           </p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

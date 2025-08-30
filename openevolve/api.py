@@ -7,8 +7,6 @@ import uuid
 import asyncio
 import logging
 import multiprocessing
-import os
-import glob
 from pathlib import Path
 from typing import Dict, Any
 from flask import Flask, request, jsonify
@@ -25,61 +23,6 @@ CORS(app)  # Enable CORS for all routes
 
 # Store for running evolutions
 evolutions: Dict[str, multiprocessing.Process] = {}
-
-
-def find_latest_checkpoint(base_folder: str):
-    """Locate the most recent checkpoint directory in the given base folder."""
-    if os.path.basename(base_folder).startswith("checkpoint_"):
-        return base_folder
-    checkpoint_folders = glob.glob("**/checkpoint_*", root_dir=base_folder, recursive=True)
-    if not checkpoint_folders:
-        logger.info(f"No checkpoint folders found in {base_folder}")
-        return None
-    checkpoint_folders = [os.path.join(base_folder, folder) for folder in checkpoint_folders]
-    checkpoint_folders.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-    return checkpoint_folders[0]
-
-
-def load_evolution_data(checkpoint_folder: str):
-    """Load program metadata, nodes, and edges from a checkpoint directory."""
-    meta_path = os.path.join(checkpoint_folder, "metadata.json")
-    programs_dir = os.path.join(checkpoint_folder, "programs")
-    if not os.path.exists(meta_path) or not os.path.exists(programs_dir):
-        logger.info(f"Missing metadata.json or programs dir in {checkpoint_folder}")
-        return {"archive": [], "nodes": [], "edges": [], "checkpoint_dir": checkpoint_folder}
-    with open(meta_path) as f:
-        meta = json.load(f)
-    nodes = []
-    id_to_program = {}
-    pids = set()
-    for island_idx, id_list in enumerate(meta.get("islands", [])):
-        for pid in id_list:
-            prog_path = os.path.join(programs_dir, f"{pid}.json")
-            if pid in pids:
-                base_pid = pid.split("-copy")[0] if "-copy" in pid else pid
-                copy_num = 1
-                while f"{base_pid}-copy{copy_num}" in pids:
-                    copy_num += 1
-                pid = f"{base_pid}-copy{copy_num}"
-            pids.add(pid)
-            if os.path.exists(prog_path):
-                with open(prog_path) as pf:
-                    prog = json.load(pf)
-                prog["id"] = pid
-                prog["island"] = island_idx
-                nodes.append(prog)
-                id_to_program[pid] = prog
-    edges = []
-    for prog in nodes:
-        parent_id = prog.get("parent_id")
-        if parent_id and parent_id in id_to_program:
-            edges.append({"source": parent_id, "target": prog["id"]})
-    return {
-        "archive": meta.get("archive", []),
-        "nodes": nodes,
-        "edges": edges,
-        "checkpoint_dir": checkpoint_folder,
-    }
 
 
 class EvolutionRequest:
@@ -234,32 +177,6 @@ def stop_evolution(run_id: str):
     evolutions.pop(run_id, None)
 
     return jsonify({"status": "stopped", "runId": run_id}), 200
-
-
-@app.route("/visualizer/data", methods=["GET"])
-def visualizer_data():
-    """Return evolution data for the latest checkpoint in the provided path."""
-    base_folder = request.args.get("path") or os.environ.get("EVOLVE_OUTPUT", "examples/")
-    checkpoint_dir = find_latest_checkpoint(base_folder)
-    if not checkpoint_dir:
-        return jsonify({"archive": [], "nodes": [], "edges": [], "checkpoint_dir": ""})
-    data = load_evolution_data(checkpoint_dir)
-    return jsonify(data)
-
-
-@app.route("/visualizer/program/<program_id>", methods=["GET"])
-def visualizer_program(program_id: str):
-    """Return data for a single program from the latest checkpoint."""
-    base_folder = request.args.get("path") or os.environ.get("EVOLVE_OUTPUT", "examples/")
-    checkpoint_dir = find_latest_checkpoint(base_folder)
-    if not checkpoint_dir:
-        return jsonify({"error": "Checkpoint not found"}), 404
-    data = load_evolution_data(checkpoint_dir)
-    program_data = next((p for p in data["nodes"] if p["id"] == program_id), None)
-    if not program_data:
-        return jsonify({"error": "Program not found"}), 404
-    program_data = {**program_data, "checkpoint_dir": checkpoint_dir}
-    return jsonify(program_data)
 
 
 if __name__ == "__main__":
