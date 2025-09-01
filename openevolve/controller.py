@@ -77,6 +77,7 @@ class OpenEvolve:
         config_path: Optional[str] = None,
         config: Optional[Config] = None,
         output_dir: Optional[str] = None,
+        user_context: Optional[Dict[str, Any]] = None,
     ):
         # Load configuration
         if config is not None:
@@ -90,6 +91,7 @@ class OpenEvolve:
         self.output_dir = output_dir or os.path.join(
             os.path.dirname(initial_program_path), "openevolve_output"
         )
+        self.user_context = user_context or {}
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Set up logging
@@ -158,6 +160,7 @@ class OpenEvolve:
             self.evaluator_prompt_sampler,
             database=self.database,
             suffix=Path(self.initial_program_path).suffix,
+            context=self.user_context,
         )
         self.evaluation_file = evaluation_file
 
@@ -276,7 +279,7 @@ class OpenEvolve:
         # Initialize improved parallel processing
         try:
             self.parallel_controller = ProcessParallelController(
-                self.config, self.evaluation_file, self.database
+                self.config, self.evaluation_file, self.database, user_context=self.user_context
             )
 
             # Set up signal handlers for graceful shutdown

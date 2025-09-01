@@ -15,7 +15,7 @@ import traceback
 import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-import traceback
+import inspect
 
 from openevolve.config import EvaluatorConfig
 from openevolve.database import ProgramDatabase
@@ -45,6 +45,7 @@ class Evaluator:
         prompt_sampler: Optional[PromptSampler] = None,
         database: Optional[ProgramDatabase] = None,
         suffix: Optional[str]=".py",
+        context: Optional[Dict[str, Any]] = None,
     ):
         self.config = config
         self.evaluation_file = evaluation_file
@@ -52,6 +53,7 @@ class Evaluator:
         self.llm_ensemble = llm_ensemble
         self.prompt_sampler = prompt_sampler
         self.database = database
+        self.context = context or {}
 
         # Create a task pool for parallel evaluation
         self.task_pool = TaskPool(max_concurrency=config.parallel_evaluations)
@@ -128,6 +130,17 @@ class Evaluator:
                 logger.debug(
                     f"Cascade evaluation properly configured with available stage functions"
                 )
+
+    def _function_accepts_context(self, func: Callable) -> bool:
+        """Check if a function accepts a 'context' parameter or **kwargs"""
+        try:
+            sig = inspect.signature(func)
+            return (
+                "context" in sig.parameters
+                or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+            )
+        except (ValueError, TypeError):
+            return False
 
     async def evaluate_program(
         self,
@@ -348,6 +361,10 @@ class Evaluator:
         # Create a coroutine that runs the evaluation function in an executor
         async def run_evaluation():
             loop = asyncio.get_event_loop()
+            if self._function_accepts_context(self.evaluate_function):
+                return await loop.run_in_executor(
+                    None, lambda: self.evaluate_function(program_path, context=self.context)
+                )
             return await loop.run_in_executor(None, self.evaluate_function, program_path)
 
         # Run the evaluation with timeout - let exceptions bubble up for retry handling
@@ -393,7 +410,12 @@ class Evaluator:
 
                 async def run_stage1():
                     loop = asyncio.get_event_loop()
-                    return await loop.run_in_executor(None, module.evaluate_stage1, program_path)
+                    func = module.evaluate_stage1
+                    if self._function_accepts_context(func):
+                        return await loop.run_in_executor(
+                            None, lambda: func(program_path, context=self.context)
+                        )
+                    return await loop.run_in_executor(None, func, program_path)
 
                 stage1_result = await asyncio.wait_for(run_stage1(), timeout=self.config.timeout)
                 stage1_eval_result = self._process_evaluation_result(stage1_result)
@@ -434,7 +456,12 @@ class Evaluator:
 
                 async def run_stage2():
                     loop = asyncio.get_event_loop()
-                    return await loop.run_in_executor(None, module.evaluate_stage2, program_path)
+                    func = module.evaluate_stage2
+                    if self._function_accepts_context(func):
+                        return await loop.run_in_executor(
+                            None, lambda: func(program_path, context=self.context)
+                        )
+                    return await loop.run_in_executor(None, func, program_path)
 
                 stage2_result = await asyncio.wait_for(run_stage2(), timeout=self.config.timeout)
                 stage2_eval_result = self._process_evaluation_result(stage2_result)
@@ -496,7 +523,12 @@ class Evaluator:
 
                 async def run_stage3():
                     loop = asyncio.get_event_loop()
-                    return await loop.run_in_executor(None, module.evaluate_stage3, program_path)
+                    func = module.evaluate_stage3
+                    if self._function_accepts_context(func):
+                        return await loop.run_in_executor(
+                            None, lambda: func(program_path, context=self.context)
+                        )
+                    return await loop.run_in_executor(None, func, program_path)
 
                 stage3_result = await asyncio.wait_for(run_stage3(), timeout=self.config.timeout)
                 stage3_eval_result = self._process_evaluation_result(stage3_result)
