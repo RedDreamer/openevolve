@@ -80,6 +80,7 @@ export default function ProjectHubPage(){
   const [evalFileName, setEvalFileName] = useState<string>('');
   const [cfgFile, setCfgFile] = useState<File | null>(null);
   const [cfgFileName, setCfgFileName] = useState<string>('');
+  const [contextText, setContextText] = useState<string>('');
   const [isStarting, setIsStarting] = useState<boolean>(false);
 
   const usedSeed = useMemo(()=> chooseSeed(seedCode, code), [seedCode, code]);
@@ -98,10 +99,20 @@ export default function ProjectHubPage(){
   const handleStartEvolution = async () => {
     setIsStarting(true);
     try {
+      let context: Record<string, unknown> | undefined;
+      if (contextText) {
+        try {
+          context = JSON.parse(contextText);
+        } catch (err) {
+          alert('Invalid context JSON');
+          return;
+        }
+      }
       const result = await startEvolution({
         code: usedSeed,
         evaluator: evaluatorText,
         configFile: cfgFile || undefined,
+        context,
       });
 
       // Save runId to localStorage
@@ -354,6 +365,16 @@ export default function ProjectHubPage(){
                   <summary className="cursor-pointer">View example config</summary>
                   <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
                 </details>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="text-sm font-medium text-slate-900">Context</div>
+                <textarea
+                  className="mt-2 h-40 w-full rounded-xl border border-slate-200 p-3 font-mono text-sm leading-6 text-slate-900"
+                  placeholder='{"sort": "name"}'
+                  value={contextText}
+                  onChange={(e)=>setContextText(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-slate-500">Optional JSON context passed to evaluator</p>
               </div>
             </div>
           </div>

@@ -19,6 +19,8 @@ from openevolve.database import Program, ProgramDatabase
 logger = logging.getLogger(__name__)
 
 
+_worker_context: Dict[str, Any] = {}
+
 @dataclass
 class SerializableResult:
     """Result that can be pickled and sent between processes"""
@@ -33,13 +35,14 @@ class SerializableResult:
     error: Optional[str] = None
 
 
-def _worker_init(config_dict: dict, evaluation_file: str) -> None:
+def _worker_init(config_dict: dict, evaluation_file: str, user_context: Dict[str, Any]) -> None:
     """Initialize worker process with necessary components"""
     global _worker_config
     global _worker_evaluation_file
     global _worker_evaluator
     global _worker_llm_ensemble
     global _worker_prompt_sampler
+    global _worker_context
 
     # Store config for later use
     # Reconstruct Config object from nested dictionaries
@@ -79,6 +82,7 @@ def _worker_init(config_dict: dict, evaluation_file: str) -> None:
         },
     )
     _worker_evaluation_file = evaluation_file
+    _worker_context = user_context or {}
 
     # These will be lazily initialized on first use
     _worker_evaluator = None
@@ -112,13 +116,14 @@ def _lazy_init_worker_components():
         evaluator_prompt = PromptSampler(_worker_config.prompt)
         evaluator_prompt.set_templates("evaluator_system_message")
 
-        _worker_evaluator = Evaluator(
-            _worker_config.evaluator,
-            _worker_evaluation_file,
-            evaluator_llm,
-            evaluator_prompt,
-            database=None,  # No shared database in worker
-        )
+    _worker_evaluator = Evaluator(
+        _worker_config.evaluator,
+        _worker_evaluation_file,
+        evaluator_llm,
+        evaluator_prompt,
+        database=None,  # No shared database in worker
+        context=_worker_context,
+    )
 
 
 def _run_iteration_worker(
@@ -275,10 +280,11 @@ def _run_iteration_worker(
 class ProcessParallelController:
     """Controller for process-based parallel evolution"""
 
-    def __init__(self, config: Config, evaluation_file: str, database: ProgramDatabase):
+    def __init__(self, config: Config, evaluation_file: str, database: ProgramDatabase, user_context: Optional[Dict[str, Any]] = None):
         self.config = config
         self.evaluation_file = evaluation_file
         self.database = database
+        self.user_context = user_context or {}
 
         self.executor: Optional[ProcessPoolExecutor] = None
         self.shutdown_event = mp.Event()
@@ -337,7 +343,7 @@ class ProcessParallelController:
         self.executor = ProcessPoolExecutor(
             max_workers=self.num_workers,
             initializer=_worker_init,
-            initargs=(config_dict, self.evaluation_file),
+            initargs=(config_dict, self.evaluation_file, self.user_context),
         )
 
         logger.info(f"Started process pool with {self.num_workers} processes")

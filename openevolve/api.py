@@ -30,11 +30,17 @@ class EvolutionRequest:
         self.code = data.get("code", "")
         self.evaluator = data.get("evaluator", "")
         self.metrics = data.get("metrics", [])
+        self.context = data.get("context", {})
         self.run_id = str(uuid.uuid4())
 
 
 def run_evolution_process(
-    seed_file: str, evaluator_file: str, config_path: str, output_path: str, run_id: str
+    seed_file: str,
+    evaluator_file: str,
+    config_path: str,
+    output_path: str,
+    run_id: str,
+    context: Dict[str, Any],
 ):
     """Run OpenEvolve in a separate process"""
     try:
@@ -43,6 +49,7 @@ def run_evolution_process(
             evaluation_file=evaluator_file,
             config_path=config_path,
             output_dir=output_path,
+            user_context=context,
         )
         asyncio.run(openevolve.run())
     except Exception as e:
@@ -64,6 +71,7 @@ def start_evolution():
             code = data.get("code", "")
             evaluator = data.get("evaluator", "")
             metrics = data.get("metrics", [])
+            context = data.get("context", {})
             config_content = data.get("config")
             config_file_obj = None
         elif request.mimetype == "multipart/form-data":
@@ -71,10 +79,15 @@ def start_evolution():
             code = form.get("code", "")
             evaluator = form.get("evaluator", "")
             metrics_raw = form.get("metrics", "[]")
+            context_raw = form.get("context", "{}")
             try:
                 metrics = json.loads(metrics_raw)
             except json.JSONDecodeError:
                 return jsonify({"error": "Invalid metrics format; expected JSON array."}), 400
+            try:
+                context = json.loads(context_raw)
+            except json.JSONDecodeError:
+                return jsonify({"error": "Invalid context format; expected JSON object."}), 400
             config_file_obj = request.files.get("config_file")
             config_content = None
         else:
@@ -89,6 +102,7 @@ def start_evolution():
                 "code": code,
                 "evaluator": evaluator,
                 "metrics": metrics,
+                "context": context,
             }
         )
 
@@ -125,7 +139,7 @@ def start_evolution():
         # Start evolution in background process
         process = multiprocessing.Process(
             target=run_evolution_process,
-            args=(str(seed_file), str(evaluator_file), config_path, output_path, evolution_request.run_id),
+            args=(str(seed_file), str(evaluator_file), config_path, output_path, evolution_request.run_id, evolution_request.context),
         )
         process.daemon = True
         process.start()
