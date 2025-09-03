@@ -81,11 +81,36 @@ export default function ProjectHubPage(){
   const [cfgFile, setCfgFile] = useState<File | null>(null);
   const [cfgFileName, setCfgFileName] = useState<string>('');
   const [contextText, setContextText] = useState<string>('');
+  const [contextError, setContextError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState<boolean>(false);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [diffUserPrompt, setDiffUserPrompt] = useState<string>('');
   const [fullRewritePrompt, setFullRewritePrompt] = useState<string>('');
   const [evaluationPrompt, setEvaluationPrompt] = useState<string>('');
+  const [activePrompt, setActivePrompt] = useState<'system' | 'diff' | 'full' | 'evaluation'>('system');
+
+  const promptValue =
+    activePrompt === 'system'
+      ? systemPrompt
+      : activePrompt === 'diff'
+      ? diffUserPrompt
+      : activePrompt === 'full'
+      ? fullRewritePrompt
+      : evaluationPrompt;
+  const setPromptValue =
+    activePrompt === 'system'
+      ? setSystemPrompt
+      : activePrompt === 'diff'
+      ? setDiffUserPrompt
+      : activePrompt === 'full'
+      ? setFullRewritePrompt
+      : setEvaluationPrompt;
+  const promptTabs: { key: typeof activePrompt; label: string }[] = [
+    { key: 'system', label: 'System' },
+    { key: 'diff', label: 'Diff' },
+    { key: 'full', label: 'Full Rewrite' },
+    { key: 'evaluation', label: 'Evaluation' },
+  ];
 
   const usedSeed = useMemo(()=> chooseSeed(seedCode, code), [seedCode, code]);
   const hubRef = useRef<HTMLDivElement | null>(null);
@@ -114,6 +139,10 @@ export default function ProjectHubPage(){
   const handleStartEvolution = async () => {
     setIsStarting(true);
     try {
+      if (contextError) {
+        alert('Invalid context JSON');
+        return;
+      }
       let context: Record<string, unknown> | undefined;
       if (contextText) {
         try {
@@ -389,50 +418,41 @@ export default function ProjectHubPage(){
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-medium text-slate-900 mb-2">Prompts</div>
-                <div className="space-y-2">
-                  <div>
-                    <div className="text-xs text-slate-600">System Message</div>
-                    <textarea
-                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
-                      value={systemPrompt}
-                      onChange={(e)=>setSystemPrompt(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-600">Diff User</div>
-                    <textarea
-                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
-                      value={diffUserPrompt}
-                      onChange={(e)=>setDiffUserPrompt(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-600">Full Rewrite User</div>
-                    <textarea
-                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
-                      value={fullRewritePrompt}
-                      onChange={(e)=>setFullRewritePrompt(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-600">Evaluation</div>
-                    <textarea
-                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
-                      value={evaluationPrompt}
-                      onChange={(e)=>setEvaluationPrompt(e.target.value)}
-                    />
-                  </div>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {promptTabs.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setActivePrompt(t.key)}
+                      className={`rounded-lg border px-3 py-1 text-xs font-medium ${
+                        activePrompt === t.key
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
                 </div>
+                <MonacoEditor height={180} value={promptValue} onChange={setPromptValue} />
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-medium text-slate-900">Context</div>
-                <textarea
-                  className="mt-2 h-40 w-full rounded-xl border border-slate-200 p-3 font-mono text-sm leading-6 text-slate-900"
-                  placeholder='{"sort": "name"}'
+                <MonacoEditor
+                  height={160}
                   value={contextText}
-                  onChange={(e)=>setContextText(e.target.value)}
+                  onChange={(v)=>{
+                    setContextText(v);
+                    if (v) {
+                      try { JSON.parse(v); setContextError(null); }
+                      catch { setContextError('Invalid JSON'); }
+                    } else {
+                      setContextError(null);
+                    }
+                  }}
                 />
                 <p className="mt-1 text-xs text-slate-500">Optional JSON context passed to evaluator</p>
+                {contextError && <p className="mt-1 text-xs text-red-600">{contextError}</p>}
               </div>
             </div>
           </div>
