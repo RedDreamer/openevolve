@@ -80,8 +80,10 @@ export default function ProjectHubPage(){
   const [evalFileName, setEvalFileName] = useState<string>('');
   const [cfgFile, setCfgFile] = useState<File | null>(null);
   const [cfgFileName, setCfgFileName] = useState<string>('');
+  const [cfgText, setCfgText] = useState<string>('');
   const [contextText, setContextText] = useState<string>('');
   const [contextError, setContextError] = useState<string | null>(null);
+  const [showContext, setShowContext] = useState<boolean>(false);
   const [isStarting, setIsStarting] = useState<boolean>(false);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [diffUserPrompt, setDiffUserPrompt] = useState<string>('');
@@ -370,11 +372,7 @@ export default function ProjectHubPage(){
                   {evalFileName ? (
                     <>
                       <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {evalFileName}</div>
-                      <textarea
-                        value={evaluatorText}
-                        readOnly
-                        className="h-40 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 text-slate-900 opacity-80"
-                      />
+                      <MonacoEditor value={evaluatorText} height={160} language="python" readOnly />
                     </>
                   ) : (
                     <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
@@ -384,41 +382,43 @@ export default function ProjectHubPage(){
                     </label>
                   )}
                 </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="text-sm font-medium text-slate-900">Run Configuration</div>
-                    {cfgFileName && (
-                      <button
-                        data-testid="clear-config"
-                        className="rounded-md px-2 py-1 hover:bg-slate-100"
-                        onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  {cfgFileName ? (
-                    <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
-                  ) : (
-                    <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
-
-                      Upload a config file (.yaml)
-                      <input
-                        data-testid="upload-config"
-                        type="file"
-                        className="hidden"
-                        accept=".yaml"
-                        onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); }}
-                      />
-                    </label>
-                  )}
-                  <details className="mt-3 text-xs text-slate-500">
-                    <summary className="cursor-pointer">View example config</summary>
-                <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
-                  </details>
-                </div>
               </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-medium text-slate-900">Run Configuration</div>
+                {cfgFileName && (
+                  <button
+                    data-testid="clear-config"
+                    className="rounded-md px-2 py-1 hover:bg-slate-100"
+                    onClick={()=>{ setCfgFile(null); setCfgFileName(''); setCfgText(''); }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {cfgFileName ? (
+                <>
+                  <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
+                  <MonacoEditor value={cfgText} height={180} language="yaml" readOnly />
+                </>
+              ) : (
+                <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
+                  Upload a config file (.yaml)
+                  <input
+                    data-testid="upload-config"
+                    type="file"
+                    className="hidden"
+                    accept=".yaml"
+                    onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); setCfgText(await readFileAsText(f)); }}
+                  />
+                </label>
+              )}
+              <details className="mt-3 text-xs text-slate-500">
+                <summary className="cursor-pointer">View example config</summary>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
+              </details>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
@@ -485,22 +485,48 @@ export default function ProjectHubPage(){
               <MonacoEditor height={420} value={promptValue} onChange={setPromptValue} />
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-sm font-medium text-slate-900">Context</div>
-              <MonacoEditor
-                height={200}
-                value={contextText}
-                onChange={(v)=>{
-                  setContextText(v);
-                  if (v) {
-                    try { JSON.parse(v); setContextError(null); }
-                    catch { setContextError('Invalid JSON'); }
-                  } else {
-                    setContextError(null);
-                  }
-                }}
-              />
-              <p className="mt-1 text-xs text-slate-500">Optional JSON context passed to evaluator</p>
-              {contextError && <p className="mt-1 text-xs text-red-600">{contextError}</p>}
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-medium text-slate-900">Context</div>
+                {!showContext ? (
+                  <button
+                    className="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                    onClick={() => setShowContext(true)}
+                  >
+                    Add
+                  </button>
+                ) : (
+                  <button
+                    className="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                    onClick={() => {
+                      setShowContext(false);
+                      setContextText('');
+                      setContextError(null);
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {showContext && (
+                <>
+                  <MonacoEditor
+                    height={200}
+                    value={contextText}
+                    language="json"
+                    onChange={(v)=>{
+                      setContextText(v);
+                      if (v) {
+                        try { JSON.parse(v); setContextError(null); }
+                        catch { setContextError('Invalid JSON'); }
+                      } else {
+                        setContextError(null);
+                      }
+                    }}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Optional JSON context passed to evaluator</p>
+                  {contextError && <p className="mt-1 text-xs text-red-600">{contextError}</p>}
+                </>
+              )}
             </div>
           </div>
         </div>
