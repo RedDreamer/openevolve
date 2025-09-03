@@ -88,6 +88,7 @@ export default function ProjectHubPage(){
   const [fullRewritePrompt, setFullRewritePrompt] = useState<string>('');
   const [evaluationPrompt, setEvaluationPrompt] = useState<string>('');
   const [activePrompt, setActivePrompt] = useState<'system' | 'diff' | 'full' | 'evaluation'>('system');
+  const [promptFileName, setPromptFileName] = useState<string>('');
 
   const promptValue =
     activePrompt === 'system'
@@ -321,139 +322,185 @@ export default function ProjectHubPage(){
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-900">Seed Algorithm</div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-sm font-medium text-slate-900">Seed Algorithm</div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
+                      <span>Upload</span>
+                      <input
+                        data-testid="upload-seed"
+                        type="file"
+                        className="hidden"
+                        accept=".py,.txt"
+                        onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setSeedCode(await readFileAsText(f)); setSeedFileName(f.name); }}
+                      />
+                    </label>
+                    {seedFileName && (
+                      <button
+                        data-testid="clear-seed"
+                        className="rounded-md px-2 py-1 hover:bg-slate-100"
+                        onClick={()=>{ setSeedCode(''); setSeedFileName(''); }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {seedFileName && <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {seedFileName}</div>}
+                <MonacoEditor value={usedSeed} onChange={seedCode?undefined:setCode} height={420}/>
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-sm font-medium text-slate-900">Evaluator</div>
+                    {evalFileName && (
+                      <button
+                        data-testid="clear-evaluator"
+                        className="rounded-md px-2 py-1 hover:bg-slate-100"
+                        onClick={()=>{ setEvaluatorText(''); setEvalFileName(''); }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {evalFileName ? (
+                    <>
+                      <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {evalFileName}</div>
+                      <textarea
+                        value={evaluatorText}
+                        readOnly
+                        className="h-40 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 text-slate-900 opacity-80"
+                      />
+                    </>
+                  ) : (
+                    <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
+                      Upload an evaluator script (.py)
+                      <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py" onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
+                    </label>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-sm font-medium text-slate-900">Run Configuration</div>
+                    {cfgFileName && (
+                      <button
+                        data-testid="clear-config"
+                        className="rounded-md px-2 py-1 hover:bg-slate-100"
+                        onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {cfgFileName ? (
+                    <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
+                  ) : (
+                    <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
+
+                      Upload a config file (.yaml)
+                      <input
+                        data-testid="upload-config"
+                        type="file"
+                        className="hidden"
+                        accept=".yaml"
+                        onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); }}
+                      />
+                    </label>
+                  )}
+                  <details className="mt-3 text-xs text-slate-500">
+                    <summary className="cursor-pointer">View example config</summary>
+                <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
+                  </details>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-medium text-slate-900">Prompts</div>
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-100">
                     <span>Upload</span>
                     <input
-                      data-testid="upload-seed"
+                      data-testid="upload-prompts"
                       type="file"
                       className="hidden"
-                      accept=".py,.txt"
-                      onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setSeedCode(await readFileAsText(f)); setSeedFileName(f.name); }}
+                      accept=".json,.txt"
+                      onChange={async (e)=>{
+                        const f = e.target.files?.[0];
+                        if(!f) return;
+                        const text = await readFileAsText(f);
+                        try {
+                          const d = JSON.parse(text);
+                          setSystemPrompt(d.system_message || '');
+                          setDiffUserPrompt(d.diff_user || '');
+                          setFullRewritePrompt(d.full_rewrite_user || '');
+                          setEvaluationPrompt(d.evaluation || '');
+                        } catch {
+                          setPromptValue(text);
+                        }
+                        setPromptFileName(f.name);
+                      }}
                     />
                   </label>
-                  {seedFileName && (
+                  {promptFileName && (
                     <button
-                      data-testid="clear-seed"
+                      data-testid="clear-prompts"
                       className="rounded-md px-2 py-1 hover:bg-slate-100"
-                      onClick={()=>{ setSeedCode(''); setSeedFileName(''); }}
+                      onClick={()=>{
+                        setPromptFileName('');
+                        setSystemPrompt('');
+                        setDiffUserPrompt('');
+                        setFullRewritePrompt('');
+                        setEvaluationPrompt('');
+                      }}
                     >
                       Clear
                     </button>
                   )}
                 </div>
               </div>
-              {seedFileName && <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {seedFileName}</div>}
-              <MonacoEditor value={usedSeed} onChange={seedCode?undefined:setCode} height={420}/>
+              {promptFileName && <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {promptFileName}</div>}
+              <div className="mb-3 flex flex-wrap gap-2">
+                {promptTabs.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActivePrompt(t.key)}
+                    className={`rounded-lg border px-3 py-1 text-xs font-medium ${
+                      activePrompt === t.key
+                        ? 'bg-violet-600 text-white border-violet-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <MonacoEditor height={420} value={promptValue} onChange={setPromptValue} />
             </div>
-
-            <div className="space-y-6">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="text-sm font-medium text-slate-900">Evaluator</div>
-                  {evalFileName && (
-                    <button
-                      data-testid="clear-evaluator"
-                      className="rounded-md px-2 py-1 hover:bg-slate-100"
-                      onClick={()=>{ setEvaluatorText(''); setEvalFileName(''); }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                {evalFileName ? (
-                  <>
-                    <div className="mb-2 truncate text-xs text-slate-500">Uploaded: {evalFileName}</div>
-                    <textarea
-                      value={evaluatorText}
-                      readOnly
-                      className="h-40 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 text-slate-900 opacity-80"
-                    />
-                  </>
-                ) : (
-                  <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
-
-                    Upload an evaluator script (.py)
-                    <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py" onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
-                  </label>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="text-sm font-medium text-slate-900">Run Configuration</div>
-                  {cfgFileName && (
-                    <button
-                      data-testid="clear-config"
-                      className="rounded-md px-2 py-1 hover:bg-slate-100"
-                      onClick={()=>{ setCfgFile(null); setCfgFileName(''); }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                {cfgFileName ? (
-                  <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
-                ) : (
-                  <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
-
-                    Upload a config file (.yaml)
-                    <input
-                      data-testid="upload-config"
-                      type="file"
-                      className="hidden"
-                      accept=".yaml"
-                      onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setCfgFile(f); setCfgFileName(f.name); }}
-                    />
-                  </label>
-                )}
-                <details className="mt-3 text-xs text-slate-500">
-                  <summary className="cursor-pointer">View example config</summary>
-              <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
-                </details>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-sm font-medium text-slate-900 mb-2">Prompts</div>
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {promptTabs.map((t) => (
-                    <button
-                      key={t.key}
-                      type="button"
-                      onClick={() => setActivePrompt(t.key)}
-                      className={`rounded-lg border px-3 py-1 text-xs font-medium ${
-                        activePrompt === t.key
-                          ? 'bg-violet-600 text-white border-violet-600'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-                <MonacoEditor height={300} value={promptValue} onChange={setPromptValue} />
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-sm font-medium text-slate-900">Context</div>
-                <MonacoEditor
-                  height={160}
-                  value={contextText}
-                  onChange={(v)=>{
-                    setContextText(v);
-                    if (v) {
-                      try { JSON.parse(v); setContextError(null); }
-                      catch { setContextError('Invalid JSON'); }
-                    } else {
-                      setContextError(null);
-                    }
-                  }}
-                />
-                <p className="mt-1 text-xs text-slate-500">Optional JSON context passed to evaluator</p>
-                {contextError && <p className="mt-1 text-xs text-red-600">{contextError}</p>}
-              </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="text-sm font-medium text-slate-900">Context</div>
+              <MonacoEditor
+                height={200}
+                value={contextText}
+                onChange={(v)=>{
+                  setContextText(v);
+                  if (v) {
+                    try { JSON.parse(v); setContextError(null); }
+                    catch { setContextError('Invalid JSON'); }
+                  } else {
+                    setContextError(null);
+                  }
+                }}
+              />
+              <p className="mt-1 text-xs text-slate-500">Optional JSON context passed to evaluator</p>
+              {contextError && <p className="mt-1 text-xs text-red-600">{contextError}</p>}
             </div>
           </div>
         </div>
