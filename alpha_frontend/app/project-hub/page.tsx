@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import MonacoEditor from '@/components/MonacoEditor';
 import { useStarted } from '@/lib/state';
-import { startEvolution } from '@/lib/api';
+import { startEvolution, getPromptDefaults } from '@/lib/api';
 import LineChart from '@/components/LineChart';
 import { useRouter } from 'next/navigation';
 
@@ -82,6 +82,10 @@ export default function ProjectHubPage(){
   const [cfgFileName, setCfgFileName] = useState<string>('');
   const [contextText, setContextText] = useState<string>('');
   const [isStarting, setIsStarting] = useState<boolean>(false);
+  const [systemPrompt, setSystemPrompt] = useState<string>('');
+  const [diffUserPrompt, setDiffUserPrompt] = useState<string>('');
+  const [fullRewritePrompt, setFullRewritePrompt] = useState<string>('');
+  const [evaluationPrompt, setEvaluationPrompt] = useState<string>('');
 
   const usedSeed = useMemo(()=> chooseSeed(seedCode, code), [seedCode, code]);
   const hubRef = useRef<HTMLDivElement | null>(null);
@@ -95,6 +99,17 @@ export default function ProjectHubPage(){
       hubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [started]);
+
+  useEffect(() => {
+    getPromptDefaults()
+      .then((p) => {
+        setDiffUserPrompt(p.diff_user || '');
+        setSystemPrompt(p.system_message || '');
+        setFullRewritePrompt(p.full_rewrite_user || '');
+        setEvaluationPrompt(p.evaluation || '');
+      })
+      .catch(() => {});
+  }, []);
 
   const handleStartEvolution = async () => {
     setIsStarting(true);
@@ -113,6 +128,12 @@ export default function ProjectHubPage(){
         evaluator: evaluatorText,
         configFile: cfgFile || undefined,
         context,
+        prompts: {
+          diff_user: diffUserPrompt,
+          system_message: systemPrompt,
+          full_rewrite_user: fullRewritePrompt,
+          evaluation: evaluationPrompt,
+        },
       });
 
       // Save runId to localStorage
@@ -363,8 +384,45 @@ export default function ProjectHubPage(){
                 )}
                 <details className="mt-3 text-xs text-slate-500">
                   <summary className="cursor-pointer">View example config</summary>
-                  <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
+              <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 p-3 text-left font-mono leading-5 text-slate-700">{SAMPLE_CONFIG}</pre>
                 </details>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="text-sm font-medium text-slate-900 mb-2">Prompts</div>
+                <div className="space-y-2">
+                  <div>
+                    <div className="text-xs text-slate-600">System Message</div>
+                    <textarea
+                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
+                      value={systemPrompt}
+                      onChange={(e)=>setSystemPrompt(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-600">Diff User</div>
+                    <textarea
+                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
+                      value={diffUserPrompt}
+                      onChange={(e)=>setDiffUserPrompt(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-600">Full Rewrite User</div>
+                    <textarea
+                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
+                      value={fullRewritePrompt}
+                      onChange={(e)=>setFullRewritePrompt(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-600">Evaluation</div>
+                    <textarea
+                      className="mt-1 h-24 w-full rounded-xl border border-slate-200 p-2 font-mono text-xs leading-5 text-slate-900"
+                      value={evaluationPrompt}
+                      onChange={(e)=>setEvaluationPrompt(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-medium text-slate-900">Context</div>

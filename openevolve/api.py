@@ -7,12 +7,15 @@ import uuid
 import asyncio
 import logging
 import multiprocessing
+import shutil
 from pathlib import Path
 from typing import Dict, Any
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from openevolve.controller import OpenEvolve
+from openevolve.config import load_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +65,21 @@ def health():
     return jsonify({"status": "healthy"}), 200
 
 
+@app.route("/prompt-defaults", methods=["GET"])
+def prompt_defaults():
+    """Return default prompt contents for customization"""
+    defaults_dir = Path(__file__).parent / "prompts" / "defaults"
+    prompt_names = ["diff_user", "system_message", "full_rewrite_user", "evaluation"]
+    prompts: Dict[str, str] = {}
+    for name in prompt_names:
+        try:
+            with open(defaults_dir / f"{name}.txt", "r") as f:
+                prompts[name] = f.read()
+        except FileNotFoundError:
+            prompts[name] = ""
+    return jsonify(prompts), 200
+
+
 @app.route("/start-evolution", methods=["POST"])
 def start_evolution():
     """Start a new evolution process"""
@@ -74,6 +92,11 @@ def start_evolution():
             context = data.get("context", {})
             config_content = data.get("config")
             config_file_obj = None
+            prompts = data.get("prompts", {})
+            diff_user_prompt = prompts.get("diff_user")
+            system_prompt = prompts.get("system_message")
+            full_rewrite_prompt = prompts.get("full_rewrite_user")
+            evaluation_prompt = prompts.get("evaluation")
         elif request.mimetype == "multipart/form-data":
             form = request.form
             code = form.get("code", "")
@@ -90,6 +113,8 @@ def start_evolution():
                 return jsonify({"error": "Invalid context format; expected JSON object."}), 400
             config_file_obj = request.files.get("config_file")
             config_content = None
+            prompts = {}
+            diff_user_prompt = system_prompt = full_rewrite_prompt = evaluation_prompt = None
         else:
             return (
                 jsonify({"error": "Unsupported media type. Use application/json or multipart/form-data."}),
@@ -120,18 +145,41 @@ def start_evolution():
         with open(evaluator_file, "w") as f:
             f.write(evolution_request.evaluator)
 
+        # Prepare prompt templates
+        defaults_dir = Path(__file__).parent / "prompts" / "defaults"
+        custom_prompt_dir = temp_dir / "prompts"
+        shutil.copytree(defaults_dir, custom_prompt_dir)
+        if diff_user_prompt:
+            with open(custom_prompt_dir / "diff_user.txt", "w") as f:
+                f.write(diff_user_prompt)
+        if system_prompt:
+            with open(custom_prompt_dir / "system_message.txt", "w") as f:
+                f.write(system_prompt)
+        if full_rewrite_prompt:
+            with open(custom_prompt_dir / "full_rewrite_user.txt", "w") as f:
+                f.write(full_rewrite_prompt)
+        if evaluation_prompt:
+            with open(custom_prompt_dir / "evaluation.txt", "w") as f:
+                f.write(evaluation_prompt)
+
         # Handle configuration
-        config_path = None
+        config_path_tmp = None
         if config_file_obj:
             config_filename = config_file_obj.filename or "config.yaml"
             config_file_path = temp_dir / config_filename
             config_file_obj.save(config_file_path)
-            config_path = str(config_file_path)
+            config_path_tmp = str(config_file_path)
         elif config_content:
             config_file_path = temp_dir / "config.yaml"
             with open(config_file_path, "w") as f:
                 f.write(config_content)
-            config_path = str(config_file_path)
+            config_path_tmp = str(config_file_path)
+
+        config_obj = load_config(config_path_tmp)
+        config_obj.prompt.template_dir = str(custom_prompt_dir)
+        config_file_path = temp_dir / "config.yaml"
+        config_obj.to_yaml(config_file_path)
+        config_path = str(config_file_path)
 
         # Initialize output path
         output_path = str(temp_dir / "output")
