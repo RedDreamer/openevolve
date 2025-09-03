@@ -434,7 +434,7 @@ export default function ProjectHubPage(){
                     </button>
                   ))}
                 </div>
-                <MonacoEditor height={180} value={promptValue} onChange={setPromptValue} />
+                <MonacoEditor height={300} value={promptValue} onChange={setPromptValue} />
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="text-sm font-medium text-slate-900">Context</div>
