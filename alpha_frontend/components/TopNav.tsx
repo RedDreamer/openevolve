@@ -15,7 +15,7 @@ export default function TopNav(){
   );
   return (
     <div className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 h-16 backdrop-blur shadow-sm">
-      <div className="font-semibold text-slate-900 text-xl">AlphaEvolve</div>
+      <Link href="/" className="font-semibold text-slate-900 text-xl">AlphaEvolve</Link>
       <div data-testid="nav-tabs" aria-hidden={!started} className="flex items-center gap-3">
         {started && <Item href="/project-hub" label="Project Hub"/>}
         {started && <Item href="/monitor" label="Monitor"/>}
