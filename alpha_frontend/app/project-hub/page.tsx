@@ -182,7 +182,7 @@ export default function ProjectHubPage(){
 
   if (!started) {
     return null;
-  }
+  }lstack-integration
 
   return (
     <div className="min-h-screen">
