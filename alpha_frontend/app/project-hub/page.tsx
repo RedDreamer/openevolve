@@ -202,8 +202,7 @@ export default function ProjectHubPage(){
             </button>
           </div>
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div className="space-y-6">
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-sm font-medium text-slate-900">Seed Algorithm</div>
@@ -233,8 +232,8 @@ export default function ProjectHubPage(){
                 <MonacoEditor value={usedSeed} onChange={seedCode?undefined:setCode} height={420}/>
               </div>
 
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex justify-center">
+                <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between">
                     <div className="text-sm font-medium text-slate-900">Evaluator</div>
                     {evalFileName && (
@@ -253,8 +252,7 @@ export default function ProjectHubPage(){
                       <MonacoEditor value={evaluatorText} height={160} language="python" readOnly />
                     </>
                   ) : (
-                    <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
-
+                    <label className="flex h-60 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 transition-colors hover:border-violet-400 hover:bg-violet-50 hover:text-violet-600">
                       Upload an evaluator script (.py)
                       <input data-testid="upload-evaluator" type="file" className="hidden" accept=".py" onChange={async (e)=>{ const f = e.target.files?.[0]; if(!f) return; setEvaluatorText(await readFileAsText(f)); setEvalFileName(f.name); }} />
                     </label>
