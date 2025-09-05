@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LineChart from '@/components/LineChart';
 import Sparkline from '@/components/Sparkline';
+import CodeBlock from '@/components/CodeBlock';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -32,6 +33,7 @@ export default function MonitorPage() {
   const [outputPath, setOutputPath] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('idle');
   const [data, setData] = useState<MonitorResponse | null>(null);
+  const [showCode, setShowCode] = useState<Record<number, boolean>>({});
   const router = useRouter();
 
   // Get runId and outputPath from localStorage or URL
@@ -123,6 +125,10 @@ export default function MonitorPage() {
     }
   };
 
+  const toggleCode = (id: number) => {
+    setShowCode((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -183,10 +189,16 @@ export default function MonitorPage() {
               )}
               {isl.best && (
                 <div className="space-y-1">
-                  <div className="text-xs font-medium text-slate-700">Best Code</div>
-                  <code className="block text-xs text-slate-700 truncate">
-                    {isl.best.code}
-                  </code>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-medium text-slate-700">Best Code</div>
+                    <button
+                      onClick={() => toggleCode(isl.id)}
+                      className="text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      {showCode[isl.id] ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {showCode[isl.id] && <CodeBlock code={isl.best.code} />}
                   {isl.best.metrics && Object.keys(isl.best.metrics).length > 0 && (
                     <div className="text-xs text-slate-500 space-y-0.5">
                       {Object.entries(isl.best.metrics)
