@@ -10,12 +10,15 @@ import multiprocessing
 import shutil
 from pathlib import Path
 from typing import Dict, Any
+import os
+import glob
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from openevolve.controller import OpenEvolve
 from openevolve.config import load_config
+from openevolve.utils.metrics_utils import get_fitness_score
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +29,8 @@ CORS(app)  # Enable CORS for all routes
 
 # Store for running evolutions
 evolutions: Dict[str, multiprocessing.Process] = {}
+# Track output paths for each run
+evolution_paths: Dict[str, str] = {}
 
 
 class EvolutionRequest:
@@ -192,8 +197,9 @@ def start_evolution():
         process.daemon = True
         process.start()
 
-        # Store process handle
+        # Store process handle and output path
         evolutions[evolution_request.run_id] = process
+        evolution_paths[evolution_request.run_id] = output_path
 
         return (
             jsonify(
@@ -225,6 +231,72 @@ def evolution_status(run_id: str):
     return jsonify({"status": status, "runId": run_id}), 200
 
 
+@app.route("/monitor-data/<run_id>", methods=["GET"])
+def monitor_data(run_id: str):
+    """Return monitoring data for the latest checkpoint"""
+    output_path = evolution_paths.get(run_id)
+    if not output_path:
+        return jsonify({"error": "Run ID not found"}), 404
+
+    checkpoints_dir = os.path.join(output_path, "checkpoints")
+    if not os.path.exists(checkpoints_dir):
+        return jsonify({"error": "No checkpoints"}), 404
+
+    checkpoint_dirs = glob.glob(os.path.join(checkpoints_dir, "checkpoint_*"))
+    if not checkpoint_dirs:
+        return jsonify({"error": "No checkpoints"}), 404
+
+    checkpoint_dirs.sort(key=lambda p: int(os.path.basename(p).split("_")[-1]))
+    latest = checkpoint_dirs[-1]
+
+    metadata_path = os.path.join(latest, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return jsonify({"error": "No metadata"}), 404
+
+    with open(metadata_path, "r") as f:
+        metadata = json.load(f)
+
+    history = []
+    for ckpt in checkpoint_dirs:
+        info_path = os.path.join(ckpt, "best_program_info.json")
+        if os.path.exists(info_path):
+            with open(info_path, "r") as f:
+                info = json.load(f)
+            history.append(get_fitness_score(info.get("metrics", {})))
+
+    programs_dir = os.path.join(latest, "programs")
+
+    def load_program(pid: str):
+        prog_path = os.path.join(programs_dir, f"{pid}.json")
+        if os.path.exists(prog_path):
+            with open(prog_path, "r") as pf:
+                prog = json.load(pf)
+            score = get_fitness_score(prog.get("metrics", {}))
+            return {"id": pid, "code": prog.get("code", ""), "metrics": prog.get("metrics", {}), "fitness": score}
+        return {"id": pid}
+
+    best = None
+    best_id = metadata.get("best_program_id")
+    if best_id:
+        best = load_program(best_id)
+
+    islands = []
+    for idx, pid in enumerate(metadata.get("island_best_programs", [])):
+        island = {"id": idx}
+        if pid:
+            island["best"] = load_program(pid)
+        islands.append(island)
+
+    return jsonify(
+        {
+            "iteration": metadata.get("last_iteration"),
+            "best": best,
+            "islands": islands,
+            "history": history,
+        }
+    )
+
+
 @app.route("/stop-evolution/<run_id>", methods=["POST"])
 def stop_evolution(run_id: str):
     """Stop an evolution process"""
@@ -237,6 +309,7 @@ def stop_evolution(run_id: str):
         process.join()
 
     evolutions.pop(run_id, None)
+    evolution_paths.pop(run_id, None)
 
     return jsonify({"status": "stopped", "runId": run_id}), 200
 

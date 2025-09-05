@@ -1,44 +1,35 @@
 'use client';
+
 import { useEffect, useState } from 'react';
-// import LineChart from '@/components/LineChart';
-// import Sparkline from '@/components/Sparkline';
-// import { generateWorld } from '@/lib/world';
+import LineChart from '@/components/LineChart';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://localhost:8080';
 
-// Demo data components commented out for now
-// function IslandCard({ island, currentGen }:{ island: ReturnType<typeof generateWorld>['islands'][number]; currentGen:number }){
-//   const maxSeries = useMemo(()=> island.gens.map(g=> Math.max(...g.codes.map(c=>c.score))), [island]);
-//   const seriesToNow = maxSeries.slice(0, Math.min(currentGen+1, maxSeries.length));
-//   const snap = island.gens[Math.min(currentGen, island.gens.length-1)];
-//   const topNow = [...snap.codes].sort((a,b)=> b.score - a.score).slice(0,3);
-//   return (
-//     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-//       <div className="mb-2 flex items-center justify-between">
-//         <div className="text-sm font-semibold text-slate-900">{island.id}</div>
-//         <div className="text-xs text-slate-500">Max now: {Math.max(...snap.codes.map(c=>c.score)).toFixed(3)}</div>
-//       </div>
-//       <Sparkline data={seriesToNow} height={64} testid={`spark-${island.id}`} />
-//       <div className="mt-3 space-y-1">
-//         {topNow.map((cs, idx)=> (
-//           <div key={idx} className="flex items-center justify-between text-xs">
-//             <code className="truncate text-slate-700">{cs.code}</code>
-//             <span className="ml-3 tabular-nums text-slate-600">{cs.score.toFixed(3)}</span>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
+interface ProgramSummary {
+  id: string;
+  code: string;
+  fitness: number;
+  metrics: Record<string, number>;
+}
 
-export default function MonitorPage(){
-  // const world = useMemo(()=> generateWorld({ islands: 4, generations: 60, codesPerGen: 6, seed: 2025 }), []);
-  // const [gen, setGen] = useState<number>(0);
-  // const [paused, setPaused] = useState<boolean>(false);
+interface IslandSummary {
+  id: number;
+  best?: ProgramSummary;
+}
+
+interface MonitorResponse {
+  iteration: number;
+  history: number[];
+  best?: ProgramSummary;
+  islands: IslandSummary[];
+}
+
+export default function MonitorPage() {
   const [runId, setRunId] = useState<string | null>(null);
   const [outputPath, setOutputPath] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('idle');
+  const [data, setData] = useState<MonitorResponse | null>(null);
 
   // Get runId and outputPath from localStorage or URL
   useEffect(() => {
@@ -67,7 +58,7 @@ export default function MonitorPage(){
   // Check evolution status
   useEffect(() => {
     if (!runId) return;
-    
+
     const checkStatus = async () => {
       try {
         const response = await fetch(`${API_BASE}/evolution-status/${runId}`);
@@ -82,33 +73,45 @@ export default function MonitorPage(){
         setStatus('error');
       }
     };
-    
-    // Check status every 2 seconds
+
     const interval = setInterval(checkStatus, 2000);
     return () => clearInterval(interval);
   }, [runId]);
 
-  // Demo data animation commented out for now
-  // useEffect(()=>{
-  //   if (paused) return;
-  //   const id = setInterval(()=> setGen(g=> Math.min(world.generations-1, g+1)), 700);
-  //   return ()=> clearInterval(id);
-  // }, [paused, world.generations]);
+  // Fetch monitor data
+  useEffect(() => {
+    if (!runId) return;
 
-  // const overallToNow = world.overallBest.slice(0, gen+1);
+    const fetchData = async () => {
+      try {
+        const resp = await fetch(`${API_BASE}/monitor-data/${runId}`);
+        if (resp.ok) {
+          const json = await resp.json();
+          setData(json);
+        }
+      } catch (err) {
+        console.error('Error fetching monitor data:', err);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 2000);
+    return () => clearInterval(interval);
+  }, [runId]);
 
   const handleStop = async () => {
     if (!runId) return;
-    
+
     try {
       const response = await fetch(`${API_BASE}/stop-evolution/${runId}`, {
         method: 'POST',
       });
-      
+
       if (response.ok) {
         setStatus('stopped');
         setRunId(null);
         setOutputPath(null);
+        setData(null);
         localStorage.removeItem('currentRunId');
         localStorage.removeItem('currentOutputPath');
       }
@@ -150,26 +153,43 @@ export default function MonitorPage(){
           )}
         </div>
       </div>
-      {/* Demo charts and island cards commented out for now */}
-      {/* <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="mb-2 text-sm font-medium text-slate-900">Overall Best Fitness</div>
-        <LineChart data={overallToNow} height={220} testid="chart-overall" />
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {world.islands.map((isl)=> (
-          <IslandCard key={isl.id} island={isl} currentGen={gen} />
-        ))}
-      </div> */}
+      {runId && data && data.history.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mb-2 text-sm font-medium text-slate-900">Overall Best Fitness</div>
+          <LineChart data={data.history} height={220} testid="chart-overall" />
+        </div>
+      )}
 
-      {!runId ? (
+      {runId && data && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {data.islands.map((isl) => (
+            <div key={isl.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-900">Island {isl.id + 1}</div>
+                <div className="text-xs text-slate-500">
+                  {isl.best ? `Score: ${isl.best.fitness.toFixed(3)}` : 'No data'}
+                </div>
+              </div>
+              {isl.best && (
+                <code className="block text-xs text-slate-700 truncate">
+                  {isl.best.code}
+                </code>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!runId && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <div className="text-sm font-medium text-amber-800">No active evolution</div>
           <p className="text-sm text-amber-700 mt-1">
             Start an evolution from the Project Hub to see real-time monitoring data here.
           </p>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
+
