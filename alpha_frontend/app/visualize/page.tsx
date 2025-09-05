@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://localhost:8080';
@@ -7,6 +8,7 @@ const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://local
 export default function VisualizePage() {
   const [runId, setRunId] = useState<string | null>(null);
   const [outputPath, setOutputPath] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const storedRunId = localStorage.getItem('currentRunId');
@@ -56,7 +58,13 @@ export default function VisualizePage() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => router.push('/monitor')}
+          className="rounded-xl bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300"
+        >
+          Back to Monitor
+        </button>
         {runId && (
           <button
             onClick={handleStop}
