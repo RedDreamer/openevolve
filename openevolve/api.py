@@ -9,7 +9,7 @@ import logging
 import multiprocessing
 import shutil
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 import os
 import glob
 
@@ -256,13 +256,35 @@ def monitor_data(run_id: str):
     with open(metadata_path, "r") as f:
         metadata = json.load(f)
 
-    history = []
+    # Determine number of islands from latest metadata
+    num_islands = len(metadata.get("islands", []))
+    history: List[float] = []
+    island_histories: List[List[float]] = [[] for _ in range(num_islands)]
+
+    # Build overall and per-island history across checkpoints
     for ckpt in checkpoint_dirs:
         info_path = os.path.join(ckpt, "best_program_info.json")
         if os.path.exists(info_path):
             with open(info_path, "r") as f:
                 info = json.load(f)
             history.append(get_fitness_score(info.get("metrics", {})))
+
+        meta_path_ckpt = os.path.join(ckpt, "metadata.json")
+        programs_dir_ckpt = os.path.join(ckpt, "programs")
+        if os.path.exists(meta_path_ckpt):
+            with open(meta_path_ckpt, "r") as mf:
+                m = json.load(mf)
+            pids = m.get("island_best_programs", [])
+            for idx in range(num_islands):
+                pid = pids[idx] if idx < len(pids) else None
+                score = 0.0
+                if pid:
+                    prog_path = os.path.join(programs_dir_ckpt, f"{pid}.json")
+                    if os.path.exists(prog_path):
+                        with open(prog_path, "r") as pf:
+                            prog = json.load(pf)
+                        score = get_fitness_score(prog.get("metrics", {}))
+                island_histories[idx].append(score)
 
     programs_dir = os.path.join(latest, "programs")
 
@@ -282,7 +304,7 @@ def monitor_data(run_id: str):
 
     islands = []
     for idx, pid in enumerate(metadata.get("island_best_programs", [])):
-        island = {"id": idx}
+        island = {"id": idx, "history": island_histories[idx] if idx < len(island_histories) else []}
         if pid:
             island["best"] = load_program(pid)
         islands.append(island)

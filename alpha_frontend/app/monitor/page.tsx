@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LineChart from '@/components/LineChart';
+import Sparkline from '@/components/Sparkline';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -16,6 +17,7 @@ interface ProgramSummary {
 interface IslandSummary {
   id: number;
   best?: ProgramSummary;
+  history: number[];
 }
 
 interface MonitorResponse {
@@ -165,17 +167,39 @@ export default function MonitorPage() {
       {runId && data && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {data.islands.map((isl) => (
-            <div key={isl.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="mb-2 flex items-center justify-between">
+            <div key={isl.id} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+              <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-900">Island {isl.id + 1}</div>
                 <div className="text-xs text-slate-500">
                   {isl.best ? `Score: ${isl.best.fitness.toFixed(3)}` : 'No data'}
                 </div>
               </div>
+              {isl.history && isl.history.length > 0 && (
+                <Sparkline
+                  data={isl.history}
+                  height={60}
+                  testid={`chart-island-${isl.id}`}
+                />
+              )}
               {isl.best && (
-                <code className="block text-xs text-slate-700 truncate">
-                  {isl.best.code}
-                </code>
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-slate-700">Best Code</div>
+                  <code className="block text-xs text-slate-700 truncate">
+                    {isl.best.code}
+                  </code>
+                  {isl.best.metrics && Object.keys(isl.best.metrics).length > 0 && (
+                    <div className="text-xs text-slate-500 space-y-0.5">
+                      {Object.entries(isl.best.metrics)
+                        .slice(0, 3)
+                        .map(([k, v]) => (
+                          <div key={k}>
+                            <span className="font-medium">{k}:</span>{' '}
+                            {typeof v === 'number' ? v.toFixed(3) : String(v)}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ))}
