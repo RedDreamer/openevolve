@@ -6,7 +6,7 @@ const YAML_KEY = /^(\s*)([^:\n#]+):/gm;
 const YAML_COMMENT = /(#.*)$/gm;
 const JSON_KEY = /"([^"\\]+)":/g;
 
-function highlight(code: string, language: 'python' | 'yaml' | 'json' = 'python') {
+export function highlight(code: string, language: 'python' | 'yaml' | 'json' = 'python') {
   let escaped = code
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
