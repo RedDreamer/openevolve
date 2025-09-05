@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import LineChart from '@/components/LineChart';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-const VISUALIZER_BASE = process.env.NEXT_PUBLIC_VISUALIZER_BASE || 'http://localhost:8080';
 
 interface ProgramSummary {
   id: string;
@@ -30,6 +30,7 @@ export default function MonitorPage() {
   const [outputPath, setOutputPath] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('idle');
   const [data, setData] = useState<MonitorResponse | null>(null);
+  const router = useRouter();
 
   // Get runId and outputPath from localStorage or URL
   useEffect(() => {
@@ -135,14 +136,14 @@ export default function MonitorPage() {
         <div className="flex items-center gap-2">
           {runId && outputPath && (
             <>
-              <a
-                href={`${VISUALIZER_BASE}/?path=${encodeURIComponent(outputPath)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() =>
+                  router.push(`/visualize?runId=${runId}&path=${encodeURIComponent(outputPath)}`)
+                }
                 className="rounded-xl bg-green-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-green-700"
               >
                 Visualize
-              </a>
+              </button>
               <button
                 onClick={handleStop}
                 className="rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
