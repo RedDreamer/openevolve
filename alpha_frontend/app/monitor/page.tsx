@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import LineChart from '@/components/LineChart';
 import Sparkline from '@/components/Sparkline';
 import CodeBlock from '@/components/CodeBlock';
+import LoadingIndicator from '@/components/LoadingIndicator';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -162,6 +163,15 @@ export default function MonitorPage() {
           )}
         </div>
       </div>
+
+      {runId && status === 'running' && (!data || data.history.length === 0) && (
+        <div className="flex flex-col items-center justify-center py-10">
+          <LoadingIndicator />
+          <p className="mt-4 text-sm text-slate-500">
+            Evolution started, waiting for data...
+          </p>
+        </div>
+      )}
 
       {runId && data && data.history.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
