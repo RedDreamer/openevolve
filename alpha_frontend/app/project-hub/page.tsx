@@ -261,19 +261,28 @@ export default function ProjectHubPage(){
               <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-sm font-medium text-slate-900">Run Configuration</div>
-                  {cfgFileName && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
                     <button
-                      data-testid="clear-config"
+                      type="button"
                       className="rounded-md px-2 py-1 hover:bg-slate-100"
-                      onClick={()=>{ setCfgFile(null); setCfgFileName(''); setCfgText(''); }}
+                      onClick={()=>{ const f = new File([SAMPLE_CONFIG], 'default_config.yaml', { type: 'application/x-yaml' }); setCfgFile(f); setCfgFileName('default_config.yaml'); setCfgText(SAMPLE_CONFIG); }}
                     >
-                      Clear
+                      Use Default
                     </button>
-                  )}
+                    {cfgFileName && (
+                      <button
+                        data-testid="clear-config"
+                        className="rounded-md px-2 py-1 hover:bg-slate-100"
+                        onClick={()=>{ setCfgFile(null); setCfgFileName(''); setCfgText(''); }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {cfgFileName ? (
                   <>
-                    <div className="text-xs text-slate-500">Uploaded: {cfgFileName}</div>
+                    <div className="text-xs text-slate-500">Using: {cfgFileName}</div>
                     <MonacoEditor value={cfgText} height={180} language="yaml" readOnly />
                   </>
                 ) : (
